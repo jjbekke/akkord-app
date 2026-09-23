@@ -1,0 +1,265 @@
+/* Enkel, mobil-først styling. Fokus er funktion — ikke design. */
+:root {
+  --bg: #f3f4f2;
+  --kort: #ffffff;
+  --tekst: #1d2320;
+  --daempet: #66706b;
+  --kant: #d9ddd9;
+  --accent: #2f6b4f;
+  --fejl: #b3261e;
+  --advarsel-bg: #fff4d6;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  color: var(--tekst);
+  background: var(--bg);
+  -webkit-text-size-adjust: 100%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+}
+
+.side {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: calc(env(safe-area-inset-top, 0px) + 12px) 16px calc(env(safe-area-inset-bottom, 0px) + 32px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+h1 {
+  font-size: 1.5rem;
+  margin: 0;
+}
+
+h3 {
+  font-size: 1rem;
+  margin: 0 0 4px;
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.kort {
+  background: var(--kort);
+  border: 1px solid var(--kant);
+  border-radius: 10px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.stak {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.raekke {
+  display: flex;
+  gap: 8px;
+}
+
+.raekke > label {
+  flex: 1;
+  min-width: 0;
+}
+
+.raekke > .smal {
+  flex: 0 0 34%;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85rem;
+  color: var(--daempet);
+}
+
+/* 16px forhindrer at iOS zoomer ind på felter */
+input,
+select,
+textarea,
+button {
+  font: inherit;
+  font-size: 16px;
+  color: var(--tekst);
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid var(--kant);
+  border-radius: 8px;
+  background: #fff;
+}
+
+button {
+  min-height: 44px;
+  padding: 8px 14px;
+  border: 1px solid var(--kant);
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+button.primaer {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+button.stor {
+  min-height: 56px;
+  text-align: left;
+  font-weight: 600;
+}
+
+button.projekt {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+button.link {
+  border: none;
+  background: none;
+  color: var(--accent);
+  padding: 8px 0;
+}
+
+button.slet {
+  border: none;
+  background: none;
+  color: var(--daempet);
+  font-size: 1.3rem;
+  min-width: 36px;
+  padding: 0;
+}
+
+.faner,
+.knapgruppe {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 4px;
+}
+
+.faner {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 1;
+  background: var(--bg);
+  padding-block: 4px;
+}
+
+.faner button,
+.knapgruppe button {
+  padding: 8px 4px;
+  font-size: 0.9rem;
+}
+
+.faner button[aria-pressed='true'],
+.knapgruppe button[aria-pressed='true'] {
+  background: var(--tekst);
+  border-color: var(--tekst);
+  color: #fff;
+}
+
+.liste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.liste li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-top: 1px solid var(--kant);
+}
+
+.liste li > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.tallinje {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 3px 0;
+}
+
+.tallinje.fed {
+  font-weight: 700;
+  border-top: 1px solid var(--kant);
+  padding-top: 8px;
+}
+
+.tal {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.mellem {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.daempet {
+  color: var(--daempet);
+  font-weight: normal;
+}
+
+.lille {
+  font-size: 0.85rem;
+}
+
+.fejl {
+  color: var(--fejl);
+  margin: 0;
+}
+
+.advarsel {
+  background: var(--advarsel-bg);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin: 0;
+}
+
+.noter {
+  margin-top: 12px;
+}
+
+.noter form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
