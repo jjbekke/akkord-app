@@ -1,63 +1,64 @@
 import { describe, expect, it } from 'vitest'
-import { eksempelProjekt } from '../data/eksempel'
+import { vibyEksempel } from '../data/eksempel'
 import { beregnLoen } from './beregning'
 import { fordelEfterVaegt, gange, laesCenti } from './tal'
 
 const person = <T extends { brugerId: string }>(liste: T[], id: string) =>
   liste.find((p) => p.brugerId === id)!
 
-describe('eksempelprojektet (facit regnet uafhængigt)', () => {
-  const r = beregnLoen(eksempelProjekt())
+describe('Viby-regnskabet (facit fra notesblokken)', () => {
+  const r = beregnLoen(vibyEksempel())
 
   it('akkordarbejdet', () => {
-    expect(r.akkord.linjer.map((l) => l.beloeb)).toEqual([40000, 330000, 125000, 4500000])
-    expect(r.akkord.akkordsum).toBe(4995000)
+    expect(r.akkord.linjer.map((l) => l.beloeb)).toEqual([52800, 410000, 136880, 6372000])
+    expect(r.akkord.akkordsum).toBe(6971680)
   })
 
   it('akkordløn og overskud', () => {
-    expect(r.akkord.akkordtimer).toBe(18075)
-    expect(r.akkord.akkordloen).toBe(3213750)
-    expect(r.akkord.overskud).toBe(1781250)
+    expect(r.akkord.akkordtimer).toBe(21910)
+    expect(r.akkord.akkordloen).toBe(3681510)
+    expect(r.akkord.overskud).toBe(3290170)
 
-    // A har "andel" og får resten efter B's faste beløb
-    expect(person(r.akkord.personer, 'a')).toMatchObject({ akkordloen: 2010000, overskud: 1460250, iAlt: 3470250, krPrAkkordtime: 34530 })
-    // B får fast 40 kr. pr. akkordtime: 80,25 × 40 = 3.210,00
-    expect(person(r.akkord.personer, 'b')).toMatchObject({ akkordloen: 1203750, overskud: 321000, iAlt: 1524750, krPrAkkordtime: 19000 })
+    const a = person(r.akkord.personer, 'asbjoern')
+    expect(a).toMatchObject({ akkordloen: 2698500, overskud: 2837170, iAlt: 5535670, krPrAkkordtime: 43079 })
+
+    const j = person(r.akkord.personer, 'jeppe')
+    expect(j).toMatchObject({ akkordloen: 983010, overskud: 453000, iAlt: 1436010, krPrAkkordtime: 15850 })
   })
 
-  it('kr./akkordtime i alt', () => {
-    expect(r.akkord.krPrAkkordtime).toBe(27635)
+  it('kr./akkordtime i alt er 318,20 (notesblokken siger fejlagtigt 318,12)', () => {
+    expect(r.akkord.krPrAkkordtime).toBe(31820)
   })
 
   it('timeløn', () => {
-    expect(person(r.timeloen.personer, 'a')).toMatchObject({ timeloen: 800000, syg: 150000, vejrlig: 40000, iAlt: 990000 })
-    expect(person(r.timeloen.personer, 'b')).toMatchObject({ timeloen: 307500, syg: 0, vejrlig: 22500, iAlt: 330000 })
-    expect(person(r.timeloen.personer, 'c')).toMatchObject({ timeloen: 114000, iAlt: 114000 })
-    expect(r.timeloen).toMatchObject({ timeloen: 1221500, syg: 150000, vejrlig: 62500, iAlt: 1434000 })
+    expect(person(r.timeloen.personer, 'asbjoern')).toMatchObject({ timeloen: 997500, syg: 168000, vejrlig: 21000, iAlt: 1186500 })
+    expect(person(r.timeloen.personer, 'jeppe')).toMatchObject({ timeloen: 298375, syg: 0, vejrlig: 10850, iAlt: 309225 })
+    expect(person(r.timeloen.personer, 'oliver')).toMatchObject({ timeloen: 71520, iAlt: 71520 })
+    expect(r.timeloen).toMatchObject({ timeloen: 1367395, syg: 168000, vejrlig: 31850, iAlt: 1567245 })
   })
 
   it('samlet løn pr. person', () => {
-    expect(person(r.personer, 'a').iAlt).toBe(4460250)
-    expect(person(r.personer, 'b').iAlt).toBe(1854750)
-    expect(person(r.personer, 'c').iAlt).toBe(114000)
-    expect(r.total.iAlt).toBe(6429000)
+    expect(person(r.personer, 'asbjoern').iAlt).toBe(6722170)
+    expect(person(r.personer, 'jeppe').iAlt).toBe(1745235)
+    expect(person(r.personer, 'oliver').iAlt).toBe(71520)
+    expect(r.total.iAlt).toBe(8538925)
     expect(r.advarsler).toEqual([])
   })
 
   it('justeringer lægges oven i det beregnede', () => {
-    const data = eksempelProjekt()
+    const data = vibyEksempel()
     data.justeringer.push({
-      id: 'j1', projektId: data.projekt.id, brugerId: 'c', beloeb: 10000,
-      begrundelse: 'Kørsel', oprettetAf: 'a', oprettet: '2026-09-20',
+      id: 'j1', projektId: 'viby', brugerId: 'oliver', beloeb: 10000,
+      begrundelse: 'Kørsel', oprettetAf: 'asbjoern', oprettet: '2026-09-20',
     })
-    const c = person(beregnLoen(data).personer, 'c')
-    expect(c).toMatchObject({ beregnet: 114000, justeringer: 10000, iAlt: 124000 })
+    const o = person(beregnLoen(data).personer, 'oliver')
+    expect(o).toMatchObject({ beregnet: 71520, justeringer: 10000, iAlt: 81520 })
   })
 })
 
 describe('advarsler', () => {
   it('underskud på akkorden', () => {
-    const data = eksempelProjekt()
+    const data = vibyEksempel()
     data.akkordOpgoerelser = []
     expect(beregnLoen(data).advarsler[0]).toMatch(/underskud/)
   })

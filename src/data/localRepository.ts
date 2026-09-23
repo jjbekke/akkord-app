@@ -10,7 +10,7 @@ import type {
   Projekt,
   TimeRegistrering,
 } from '../domain/typer'
-import { eksempelProjekt } from './eksempel'
+import { vibyEksempel } from './eksempel'
 import type { Repository } from './repository'
 
 class Database extends Dexie {
@@ -52,7 +52,7 @@ export class LocalRepository implements Repository {
 
   private async indlaesEksempelFoersteGang() {
     if ((await this.db.projekter.count()) > 0) return
-    const d = eksempelProjekt()
+    const d = vibyEksempel()
     await this.db.transaction('rw', this.db.tables, async () => {
       await this.db.brugere.bulkAdd(d.brugere)
       await this.db.projekter.add(d.projekt)

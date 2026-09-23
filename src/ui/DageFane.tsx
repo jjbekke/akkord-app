@@ -78,7 +78,7 @@ export function DageFane({ data, koer, brugerId }: { data: ProjektData; koer: Ko
             Arbejde (valgfrit)
             <input
               id="dag-beskrivelse"
-              placeholder="Opmuring af gavl"
+              placeholder="Mur væg op ved Dennis"
               value={beskrivelse}
               onChange={(e) => setBeskrivelse(e.target.value)}
             />

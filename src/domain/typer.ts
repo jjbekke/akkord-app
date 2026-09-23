@@ -24,7 +24,7 @@ export type Rolle = 'ejer' | 'admin' | 'medlem'
 export type OverskudsRegel =
   /** Deler det, der er tilbage efter faste beløb, efter akkordtimer */
   | { type: 'andel' }
-  /** Fast beløb pr. akkordtime (fx 40 kr./t) */
+  /** Fast beløb pr. akkordtime (fx Jeppe: 50 kr./t) */
   | { type: 'fastPrTime'; oerePrTime: Oere }
 
 export interface Medlem {

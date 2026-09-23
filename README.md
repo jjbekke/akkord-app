@@ -7,11 +7,11 @@ Mobil-først webapp til timeregistrering, akkordregnskab, timelønsregnskab og l
 ```sh
 npm install
 npm run dev     # åbn "Network"-adressen på telefonen (samme wifi)
-npm test        # beregningsmotoren testes mod eksempelprojektet
+npm test        # beregningsmotoren testes mod Viby-regnskabet
 npm run build
 ```
 
-Første gang appen åbnes, indlæses et opdigtet eksempelprojekt.
+Første gang appen åbnes, indlæses Viby-regnskabet som eksempeldata.
 
 ## Struktur
 
@@ -19,7 +19,7 @@ Første gang appen åbnes, indlæses et opdigtet eksempelprojekt.
 src/domain/     Beregningsmotor og datatyper — ren TypeScript, ingen UI/database
   tal.ts          øre/hundrededele, dansk talformat, præcis fordeling
   beregning.ts    akkord, timeløn og samlet løn
-  beregning.test.ts  facit regnet uafhængigt
+  beregning.test.ts  facit fra Viby-regnskabet
 src/data/       Repository-interface + LocalRepository (IndexedDB via Dexie)
 src/ui/         Skærme og faner
 ```
