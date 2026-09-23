@@ -38,6 +38,14 @@ export default function App() {
     setProjektId(null)
   }
 
+  // Den huskede bruger kan være slettet (fx gamle eksempeldata) — så skal man logge ind igen.
+  useEffect(() => {
+    if (!brugerId) return
+    repo.hentBrugere().then((brugere) => {
+      if (!brugere.some((b) => b.id === brugerId)) logInd(null)
+    })
+  }, [brugerId])
+
   if (!brugerId) return <Login onLogin={logInd} />
   if (projektId) return <ProjektSide projektId={projektId} brugerId={brugerId} tilbage={() => setProjektId(null)} />
   return <Projekter brugerId={brugerId} aabn={setProjektId} logUd={() => logInd(null)} />

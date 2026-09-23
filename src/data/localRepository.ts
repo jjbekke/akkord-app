@@ -50,7 +50,28 @@ export class LocalRepository implements Repository {
     this.klar = this.indlaesEksempelFoersteGang()
   }
 
+  /**
+   * En tidligere version indlæste et opdigtet eksempelprojekt ("eksempel" med
+   * brugerne a, b og c). Fjern det, så Viby-regnskabet indlæses i stedet.
+   */
+  private async fjernGammeltEksempel() {
+    const gammelt = 'eksempel'
+    if (!(await this.db.projekter.get(gammelt))) return
+    const db = this.db
+    await db.transaction('rw', db.tables, async () => {
+      await db.projekter.delete(gammelt)
+      for (const tabel of ['medlemmer', 'dage', 'timer', 'akkordPoster', 'akkordOpgoerelser', 'justeringer', 'noter']) {
+        await db.table(tabel).where('projektId').equals(gammelt).delete()
+      }
+      for (const brugerId of ['a', 'b', 'c']) {
+        const andreProjekter = await db.medlemmer.where('brugerId').equals(brugerId).count()
+        if (andreProjekter === 0) await db.brugere.delete(brugerId)
+      }
+    })
+  }
+
   private async indlaesEksempelFoersteGang() {
+    await this.fjernGammeltEksempel()
     if ((await this.db.projekter.count()) > 0) return
     const d = vibyEksempel()
     await this.db.transaction('rw', this.db.tables, async () => {
