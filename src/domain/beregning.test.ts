@@ -3,13 +3,13 @@ import { vibyEksempel } from '../data/eksempel'
 import { beregnLoen } from './beregning'
 import { fordelEfterVaegt, gange, laesCenti } from './tal'
 
-const person = <T extends { brugerId: string }>(liste: T[], id: string) =>
-  liste.find((p) => p.brugerId === id)!
+const person = <T extends { medlemId: string }>(liste: T[], id: string) =>
+  liste.find((p) => p.medlemId === id)!
 
 describe('Viby-regnskabet (facit fra notesblokken)', () => {
   const r = beregnLoen(vibyEksempel())
 
-  it('akkordarbejdet', () => {
+  it('materialerne giver akkordsummen', () => {
     expect(r.akkord.linjer.map((l) => l.beloeb)).toEqual([52800, 410000, 136880, 6372000])
     expect(r.akkord.akkordsum).toBe(6971680)
   })
@@ -48,8 +48,8 @@ describe('Viby-regnskabet (facit fra notesblokken)', () => {
   it('justeringer lægges oven i det beregnede', () => {
     const data = vibyEksempel()
     data.justeringer.push({
-      id: 'j1', projektId: 'viby', brugerId: 'oliver', beloeb: 10000,
-      begrundelse: 'Kørsel', oprettetAf: 'asbjoern', oprettet: '2026-09-20',
+      id: 'j1', projektId: 'viby', medlemId: 'oliver', beloeb: 10000,
+      begrundelse: 'Kørsel', oprettet: '2026-09-20',
     })
     const o = person(beregnLoen(data).personer, 'oliver')
     expect(o).toMatchObject({ beregnet: 71520, justeringer: 10000, iAlt: 81520 })
@@ -59,7 +59,7 @@ describe('Viby-regnskabet (facit fra notesblokken)', () => {
 describe('advarsler', () => {
   it('underskud på akkorden', () => {
     const data = vibyEksempel()
-    data.akkordOpgoerelser = []
+    data.materialeRegistreringer = []
     expect(beregnLoen(data).advarsler[0]).toMatch(/underskud/)
   })
 })

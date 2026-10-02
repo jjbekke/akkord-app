@@ -263,3 +263,276 @@ button.slet {
   flex-direction: column;
   gap: 8px;
 }
+
+/* --- AKBOG --------------------------------------------------------------- */
+
+h2 {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--daempet);
+  margin: 12px 0 0;
+}
+
+a {
+  color: var(--accent);
+}
+
+.logo {
+  text-align: center;
+  padding: 32px 0 8px;
+}
+
+.logo h1 {
+  font-size: 2.2rem;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+}
+
+.logo p {
+  margin: 4px 0 0;
+}
+
+.top-titel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.top-titel h1 {
+  overflow-wrap: anywhere;
+}
+
+.tilbage {
+  text-decoration: none;
+  font-size: 0.9rem;
+  padding: 4px 0;
+}
+
+.midt {
+  align-items: center;
+}
+
+.besked {
+  background: #e6f2ec;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin: 0;
+}
+
+/* Links der ligner knapper */
+a.stor,
+a.knap {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  min-height: 56px;
+  padding: 8px 14px;
+  border: 1px solid var(--kant);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--tekst);
+  text-decoration: none;
+}
+
+a.knap {
+  min-height: 48px;
+  align-items: center;
+  font-weight: 600;
+}
+
+a.knap.primaer {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+a.menu {
+  min-height: 64px;
+}
+
+.projektraekke {
+  display: flex;
+  gap: 6px;
+  align-items: stretch;
+}
+
+.projektraekke > a {
+  flex: 1;
+  min-width: 0;
+}
+
+button.stjerne,
+button.ikon {
+  min-width: 44px;
+  font-size: 1.3rem;
+  padding: 0;
+  color: #b8860b;
+}
+
+button.ikon {
+  color: var(--tekst);
+}
+
+button.ikon[aria-pressed='true'] {
+  background: var(--tekst);
+  color: #fff;
+}
+
+.ikoner {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+button.lille-knap {
+  min-height: 36px;
+  padding: 4px 10px;
+  font-size: 0.9rem;
+}
+
+button.farlig {
+  color: var(--fejl);
+  border-color: var(--fejl);
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.knaprad {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.knaprad > button {
+  flex: 1 1 auto;
+}
+
+.fuld {
+  width: 100%;
+}
+
+.liste li.redigerer {
+  background: #f7f8f6;
+  margin: 0 -14px;
+  padding: 10px 14px;
+}
+
+/* Trin i "Opret projekt" */
+.trin {
+  display: flex;
+  gap: 4px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.trin li {
+  flex: 1;
+  text-align: center;
+  font-size: 0.85rem;
+  padding: 6px 2px;
+  border-bottom: 3px solid var(--kant);
+  color: var(--daempet);
+}
+
+.trin li[aria-current='step'] {
+  border-color: var(--accent);
+  color: var(--tekst);
+  font-weight: 600;
+}
+
+.trin li.klaret {
+  border-color: #9cc3ae;
+}
+
+.liste li.valg {
+  flex-wrap: wrap;
+}
+
+label.afkryds {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-height: 44px;
+  font-size: 1rem;
+  color: var(--tekst);
+}
+
+label.afkryds input {
+  width: 22px;
+  height: 22px;
+  min-height: 0;
+  flex-shrink: 0;
+}
+
+/* Registrér */
+.linjer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.linje {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed var(--kant);
+}
+
+.linje .raekke > select {
+  flex: 1;
+  min-width: 0;
+}
+
+input.antal {
+  flex: 0 0 80px;
+  width: 80px;
+  text-align: right;
+}
+
+/* Timekalender */
+.datonav {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.datonav > button {
+  min-width: 48px;
+  font-size: 1.3rem;
+}
+
+label.kalender {
+  flex: 1;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  font-size: 1.2rem;
+  color: var(--tekst);
+}
+
+.foerste-stort::first-letter {
+  text-transform: uppercase;
+}
+
+.notetekst {
+  white-space: pre-wrap;
+}
+
+/* Regnskab */
+.kort.total {
+  border-color: var(--accent);
+  border-width: 2px;
+}
+
+button.afslut {
+  min-height: 56px;
+  margin-top: 8px;
+}

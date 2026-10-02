@@ -1,18 +1,18 @@
-import { afrund, fordelEfterVaegt, gange, type Centi, type Oere } from './tal'
-import type { Id, Medlem, ProjektData, TimeType } from './typer'
+import { afrund, fordelEfterVaegt, gange, type Centi, type Oere } from './tal.ts'
+import type { Id, Medlem, ProjektData, TimeType } from './typer.ts'
 
 // Beregningsmotoren. Ren TypeScript — ingen UI og ingen database.
 
 export interface AkkordLinje {
-  postId: Id
+  projektMaterialeId: Id
   navn: string
   antal: Centi
-  enhedspris: Oere
+  stykpris: Oere
   beloeb: Oere
 }
 
 export interface AkkordPerson {
-  brugerId: Id
+  medlemId: Id
   akkordtimer: Centi
   akkordloen: Oere
   overskud: Oere
@@ -32,7 +32,7 @@ export interface AkkordRegnskab {
 }
 
 export interface TimeloenPerson {
-  brugerId: Id
+  medlemId: Id
   timer: Record<Exclude<TimeType, 'akkord'>, Centi>
   timeloen: Oere
   syg: Oere
@@ -49,7 +49,7 @@ export interface TimeloenRegnskab {
 }
 
 export interface LoenPerson {
-  brugerId: Id
+  medlemId: Id
   akkordloen: Oere
   overskud: Oere
   timeloen: Oere
@@ -64,13 +64,13 @@ export interface LoenRegnskab {
   akkord: AkkordRegnskab
   timeloen: TimeloenRegnskab
   personer: LoenPerson[]
-  total: Omit<LoenPerson, 'brugerId'>
+  total: Omit<LoenPerson, 'medlemId'>
   advarsler: string[]
 }
 
-function sumTimer(data: ProjektData, brugerId: Id, type: TimeType): Centi {
+function sumTimer(data: ProjektData, medlemId: Id, type: TimeType): Centi {
   return data.timer
-    .filter((t) => t.brugerId === brugerId && t.type === type)
+    .filter((t) => t.medlemId === medlemId && t.type === type)
     .reduce((s, t) => s + t.timer, 0)
 }
 
@@ -83,31 +83,30 @@ function prTime(beloeb: Oere, timer: Centi): Oere {
 }
 
 export function beregnAkkord(data: ProjektData, advarsler: string[] = []): AkkordRegnskab {
-  const linjer: AkkordLinje[] = data.akkordPoster.map((post) => {
+  const linjer: AkkordLinje[] = data.materialer.map((m) => {
     const antal = sum(
-      data.akkordOpgoerelser.filter((o) => o.postId === post.id),
-      (o) => o.antal,
+      data.materialeRegistreringer.filter((r) => r.projektMaterialeId === m.id),
+      (r) => r.antal,
     )
-    return { postId: post.id, navn: post.navn, antal, enhedspris: post.enhedspris, beloeb: gange(antal, post.enhedspris) }
+    return { projektMaterialeId: m.id, navn: m.navn, antal, stykpris: m.stykpris, beloeb: gange(antal, m.stykpris) }
   })
   const akkordsum = sum(linjer, (l) => l.beloeb)
 
   const deltagere = data.medlemmer
-    .map((m) => ({ m, akkordtimer: sumTimer(data, m.brugerId, 'akkord') }))
+    .map((m) => ({ m, akkordtimer: sumTimer(data, m.id, 'akkord') }))
     .filter((d) => d.akkordtimer > 0)
 
   const akkordloen = deltagere.map((d) => gange(d.akkordtimer, d.m.timesats))
   const samletLoen = sum(akkordloen, (x) => x)
   const overskud = akkordsum - samletLoen
 
-  // 1) Faste beløb pr. akkordtime
-  const faste = deltagere.map((d) =>
-    d.m.overskud.type === 'fastPrTime' ? gange(d.akkordtimer, d.m.overskud.oerePrTime) : 0,
-  )
+  // 1) Faste beløb pr. akkordtime (lærlinge)
+  const harFast = (m: Medlem) => m.overskudPrTime !== undefined
+  const faste = deltagere.map((d) => (harFast(d.m) ? gange(d.akkordtimer, d.m.overskudPrTime!) : 0))
   const rest = overskud - sum(faste, (x) => x)
 
   // 2) Resten deles efter akkordtimer blandt dem med "andel"
-  const andelsVaegte = deltagere.map((d) => (d.m.overskud.type === 'andel' ? d.akkordtimer : 0))
+  const andelsVaegte = deltagere.map((d) => (harFast(d.m) ? 0 : d.akkordtimer))
   const harAndel = andelsVaegte.some((v) => v > 0)
   const andele = harAndel ? fordelEfterVaegt(rest, andelsVaegte) : andelsVaegte.map(() => 0)
 
@@ -125,7 +124,7 @@ export function beregnAkkord(data: ProjektData, advarsler: string[] = []): Akkor
     const personOverskud = faste[i] + andele[i]
     const iAlt = akkordloen[i] + personOverskud
     return {
-      brugerId: d.m.brugerId,
+      medlemId: d.m.id,
       akkordtimer: d.akkordtimer,
       akkordloen: akkordloen[i],
       overskud: personOverskud,
@@ -150,14 +149,14 @@ export function beregnTimeloen(data: ProjektData): TimeloenRegnskab {
   const personer: TimeloenPerson[] = data.medlemmer
     .map((m: Medlem) => {
       const t = {
-        timeloen: sumTimer(data, m.brugerId, 'timeloen'),
-        syg: sumTimer(data, m.brugerId, 'syg'),
-        vejrlig: sumTimer(data, m.brugerId, 'vejrlig'),
+        timeloen: sumTimer(data, m.id, 'timeloen'),
+        syg: sumTimer(data, m.id, 'syg'),
+        vejrlig: sumTimer(data, m.id, 'vejrlig'),
       }
       const timeloen = gange(t.timeloen, m.timesats)
-      const syg = gange(t.syg, m.sygSats ?? m.timesats)
-      const vejrlig = gange(t.vejrlig, m.vejrligSats ?? m.timesats)
-      return { brugerId: m.brugerId, timer: t, timeloen, syg, vejrlig, iAlt: timeloen + syg + vejrlig }
+      const syg = gange(t.syg, m.timesats)
+      const vejrlig = gange(t.vejrlig, m.timesats)
+      return { medlemId: m.id, timer: t, timeloen, syg, vejrlig, iAlt: timeloen + syg + vejrlig }
     })
     .filter((p) => p.timer.timeloen + p.timer.syg + p.timer.vejrlig > 0)
 
@@ -177,14 +176,14 @@ export function beregnLoen(data: ProjektData): LoenRegnskab {
 
   const personer: LoenPerson[] = data.medlemmer
     .map((m) => {
-      const a = akkord.personer.find((p) => p.brugerId === m.brugerId)
-      const t = timeloen.personer.find((p) => p.brugerId === m.brugerId)
+      const a = akkord.personer.find((p) => p.medlemId === m.id)
+      const t = timeloen.personer.find((p) => p.medlemId === m.id)
       const justeringer = sum(
-        data.justeringer.filter((j) => j.brugerId === m.brugerId),
+        data.justeringer.filter((j) => j.medlemId === m.id),
         (j) => j.beloeb,
       )
       const rad = {
-        brugerId: m.brugerId,
+        medlemId: m.id,
         akkordloen: a?.akkordloen ?? 0,
         overskud: a?.overskud ?? 0,
         timeloen: t?.timeloen ?? 0,

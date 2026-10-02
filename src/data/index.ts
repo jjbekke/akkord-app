@@ -1,5 +1,4 @@
-import { LocalRepository } from './localRepository'
 import type { Repository } from './repository'
+import { SupabaseRepository } from './supabaseRepository'
 
-// Skift til `new SupabaseRepository(...)` i fase 2 — resten af appen er uændret.
-export const repo: Repository = new LocalRepository()
+export const repo: Repository = new SupabaseRepository()

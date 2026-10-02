@@ -1,6 +1,7 @@
-# Akkord — prototype
+# AKBOG
 
-Mobil-først webapp til timeregistrering, akkordregnskab, timelønsregnskab og lønregnskab.
+Mobil-først webapp til akkord-, timeløns- og lønregnskab for et sjak.
+Kører på https://jjbekke.github.io/akkord-app/ med Supabase som backend.
 
 ## Kør
 
@@ -11,29 +12,45 @@ npm test        # beregningsmotoren testes mod Viby-regnskabet
 npm run build
 ```
 
-Første gang appen åbnes, indlæses Viby-regnskabet som eksempeldata.
+Viby-regnskabet kan hentes som eksempelprojekt under Værktøjskasse → Projekter.
 
 ## Struktur
 
 ```
 src/domain/     Beregningsmotor og datatyper — ren TypeScript, ingen UI/database
   tal.ts          øre/hundrededele, dansk talformat, præcis fordeling
-  beregning.ts    akkord, timeløn og samlet løn
+  beregning.ts    akkord (materialer × stykpris), timeløn og samlet løn
   beregning.test.ts  facit fra Viby-regnskabet
-src/data/       Repository-interface + LocalRepository (IndexedDB via Dexie)
-src/ui/         Skærme og faner
+src/data/       Repository-interface + SupabaseRepository
+  raekker.ts      databaserækker → domænetyper (deles med edge-funktionen)
+src/ui/         Skærme: login, forside, værktøjskasse og projektfaner
+supabase/
+  migrations/     skema, RLS-adgangsregler, triggere og fillager
+  functions/mit-regnskab/  et medlems egen løn, beregnet på serveren
 ```
 
 ## Regler
 
 - Beløb gemmes i **øre** og timer/antal i **hundrededele** — altid heltal.
-- Der gemmes **timer og satser**, aldrig udregnede beløb.
+- Der gemmes **timer, antal og satser**, aldrig udregnede beløb.
 - Rettelser i lønregnskabet gemmes som justeringer oven på det beregnede.
 - UI taler kun med `Repository` — aldrig direkte med databasen.
+- Adgang håndhæves i databasen (RLS): projektledere ser alt, andre kun deres egne
+  timer, noter og løn. Kun opretteren kan udpege projektledere.
+- Materialepriser kan ikke ændres — man opretter en ny pris. Priserne kopieres ind i
+  projektet, så gamle regnskaber aldrig ændrer sig.
 
-## Næste skridt (fase 2)
+## Supabase
 
-1. `SupabaseRepository` der implementerer `Repository`.
-2. Supabase Auth med magic link + invitationer.
-3. RLS: kun medlemmer af et projekt kan læse/skrive dets data.
-4. Service worker (fx `vite-plugin-pwa`) så appen virker helt offline.
+- Edge-funktionen importerer `src/domain` og `src/data/raekker.ts` direkte, så
+  beregningen er den samme i appen og på serveren. Domænefilerne bruger derfor
+  `.ts`-endelser på imports.
+- Under Authentication → URL Configuration skal Site URL være
+  `https://jjbekke.github.io/akkord-app/`, og Redirect URLs skal indeholde den
+  samme adresse samt `http://localhost:5173/**` til udvikling.
+- Supabase' indbyggede e-mail har en lav grænse for antal mails i timen. Til rigtig
+  brug bør der sættes egen SMTP op (Authentication → Emails).
+
+## Næste skridt
+
+- Service worker (fx `vite-plugin-pwa`) og offline-synkronisering.
