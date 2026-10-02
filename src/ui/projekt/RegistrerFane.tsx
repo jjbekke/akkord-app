@@ -1,10 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { repo } from '../../data'
 import type { RegistreringsLinje } from '../../data/repository'
-import { kr, laesCenti, timer as visTimer } from '../../domain/tal'
+import { gange, kr, laesCenti, timer as visTimer } from '../../domain/tal'
 import { TIMETYPE_NAVN, type TimeType } from '../../domain/typer'
-import { iDag, useHandling } from '../faelles'
-import { Fejl } from '../komponenter'
+import { datoKort, datoLang, iDag, useHandling } from '../faelles'
+import { Fejl, Ikon } from '../komponenter'
 import type { FaneProps } from './ProjektSide'
 
 type LinjeType = TimeType | 'materiale'
@@ -18,6 +18,9 @@ interface Linje {
 }
 
 const TIMETYPER = Object.keys(TIMETYPE_NAVN) as TimeType[]
+/** De timetal man oftest skriver — ét tryk i stedet for tastatur. */
+const HURTIGE_TIMER = ['4', '7,5', '8', '9']
+
 let naesteNoegle = 1
 const nyLinje = (type: LinjeType = 'akkord', materialeId = ''): Linje => ({
   noegle: naesteNoegle++,
@@ -32,9 +35,17 @@ export function RegistrerFane({ data, mig, erLeder, laast, genindlaes }: FanePro
   const [dato, setDato] = useState(iDag())
   const [medlemId, setMedlemId] = useState(mig?.id ?? data.medlemmer[0]?.id ?? '')
   const [linjer, setLinjer] = useState<Linje[]>([nyLinje()])
+  const [visNote, setVisNote] = useState(false)
   const [note, setNote] = useState('')
   const [gemt, setGemt] = useState('')
   const { koer, fejl, setFejl, travl } = useHandling(genindlaes)
+
+  // Bekræftelsen forsvinder af sig selv
+  useEffect(() => {
+    if (!gemt) return
+    const t = setTimeout(() => setGemt(''), 4000)
+    return () => clearTimeout(t)
+  }, [gemt])
 
   if (!mig && !erLeder) return <p className="daempet">Du er ikke tilknyttet projektet.</p>
   if (laast) return <p className="daempet">Der kan ikke registreres i et afsluttet projekt.</p>
@@ -46,11 +57,18 @@ export function RegistrerFane({ data, mig, erLeder, laast, genindlaes }: FanePro
   const ret = (noegle: number, aendring: Partial<Linje>) =>
     setLinjer((ls) => ls.map((l) => (l.noegle === noegle ? { ...l, ...aendring } : l)))
 
+  // Opsummering til Gem-knappen
+  const timerIAlt = linjer.reduce((s, l) => s + (l.type !== 'materiale' ? Math.max(laesCenti(l.vaerdi) ?? 0, 0) : 0), 0)
+  const materialeLinjer = linjer.filter((l) => l.type === 'materiale' && l.vaerdi.trim()).length
+  const opsummering = [timerIAlt ? `${visTimer(timerIAlt)} t` : '', materialeLinjer ? `${materialeLinjer} mat.` : '']
+    .filter(Boolean)
+    .join(' + ')
+
   const gem = async (e: React.FormEvent) => {
     e.preventDefault()
     setGemt('')
     const udfyldte = linjer.filter((l) => l.vaerdi.trim() !== '')
-    if (udfyldte.length === 0 && !note.trim()) return setFejl('Udfyld mindst én linje')
+    if (udfyldte.length === 0 && !note.trim()) return setFejl('Skriv antal timer — eller tryk på et af tallene')
     if (!dato) return setFejl('Vælg en dato')
 
     const ud: RegistreringsLinje[] = []
@@ -75,102 +93,189 @@ export function RegistrerFane({ data, mig, erLeder, laast, genindlaes }: FanePro
     if (ok) {
       setLinjer([nyLinje()])
       setNote('')
-      const timerIAlt = ud.reduce((s, l) => s + (l.slags === 'timer' ? l.data.timer : 0), 0)
-      setGemt(`Gemt: ${ud.length} ${ud.length === 1 ? 'linje' : 'linjer'}${timerIAlt ? ` (${visTimer(timerIAlt)} timer)` : ''}${note.trim() ? ' og en note' : ''}.`)
+      setVisNote(false)
+      setGemt(`Gemt${opsummering ? `: ${opsummering}` : ''}${note.trim() ? ' og note' : ''}`)
     }
   }
 
-  return (
-    <form className="kort" onSubmit={gem}>
-      <h3>Registrér</h3>
-      <div className="raekke">
-        <label>
-          Dato
-          <input id="reg-dato" type="date" value={dato} onChange={(e) => setDato(e.target.value)} />
-        </label>
-        <label>
-          Person
-          <select id="reg-person" value={medlemId} disabled={!erLeder} onChange={(e) => setMedlemId(e.target.value)}>
-            {personer.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.navn}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
+  // Det der allerede er registreret den valgte dag — så man ikke registrerer dobbelt
+  const navn = data.medlemmer.find((m) => m.id === medlemId)?.navn ?? ''
+  const dagensTimer = data.timer.filter((t) => t.dato === dato && t.medlemId === medlemId)
+  const dagensMaterialer = erLeder ? data.materialeRegistreringer.filter((r) => r.dato === dato) : []
 
-      <div className="linjer">
-        {linjer.map((l) => (
-          <div className="linje" key={l.noegle}>
-            <div className="raekke">
-              <select
-                aria-label="Type"
-                value={l.type}
-                onChange={(e) => {
-                  const type = e.target.value as LinjeType
-                  ret(l.noegle, { type, materialeId: type === 'materiale' ? l.materialeId || foersteMateriale : '' })
-                }}
-              >
-                {TIMETYPER.map((t) => (
-                  <option key={t} value={t}>
-                    {TIMETYPE_NAVN[t]}
+  return (
+    <>
+      <form className="registrer" onSubmit={gem}>
+        <section className="kort">
+          <div className="dagvaelger">
+            <div>
+              <span className="feltnavn">Dag</span>
+              <strong className="foerste-stort">{dato === iDag() ? `I dag, ${datoKort(dato)}` : datoLang(dato)}</strong>
+            </div>
+            <label className="ikonknap kalenderknap" aria-label="Vælg en anden dag" title="Vælg en anden dag">
+              <Ikon navn="kalender" />
+              <input
+                type="date"
+                value={dato}
+                onClick={(e) => e.currentTarget.showPicker?.()}
+                onChange={(e) => setDato(e.target.value || iDag())}
+              />
+            </label>
+          </div>
+
+          {erLeder && (
+            <label>
+              Person
+              <select id="reg-person" value={medlemId} onChange={(e) => setMedlemId(e.target.value)}>
+                {personer.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.id === mig?.id ? `${m.navn} (dig)` : m.navn}
                   </option>
                 ))}
-                {kanMaterialer && <option value="materiale">Materialer</option>}
               </select>
-              {l.type === 'materiale' && (
+            </label>
+          )}
+        </section>
+
+        <section className="kort">
+          {linjer.map((l, i) => (
+            <div className="linje" key={l.noegle}>
+              <div className="linje-top">
+                <select
+                  aria-label="Hvad"
+                  value={l.type}
+                  onChange={(e) => {
+                    const type = e.target.value as LinjeType
+                    ret(l.noegle, { type, materialeId: type === 'materiale' ? l.materialeId || foersteMateriale : '' })
+                  }}
+                >
+                  {TIMETYPER.map((t) => (
+                    <option key={t} value={t}>
+                      {TIMETYPE_NAVN[t]}
+                    </option>
+                  ))}
+                  {kanMaterialer && <option value="materiale">Materialer</option>}
+                </select>
+                <div className="antal-felt">
+                  <input
+                    className="antal"
+                    aria-label={l.type === 'materiale' ? 'Antal' : 'Timer'}
+                    inputMode="decimal"
+                    autoFocus={i > 0}
+                    placeholder="0"
+                    value={l.vaerdi}
+                    onChange={(e) => ret(l.noegle, { vaerdi: e.target.value })}
+                  />
+                  <span className="enhed">{l.type === 'materiale' ? 'stk.' : 'timer'}</span>
+                </div>
+                {linjer.length > 1 && (
+                  <button
+                    type="button"
+                    className="ikonknap lille"
+                    aria-label="Fjern linje"
+                    onClick={() => setLinjer((ls) => ls.filter((x) => x.noegle !== l.noegle))}
+                  >
+                    <Ikon navn="luk" str={18} />
+                  </button>
+                )}
+              </div>
+
+              {l.type === 'materiale' ? (
                 <select aria-label="Materiale" value={l.materialeId} onChange={(e) => ret(l.noegle, { materialeId: e.target.value })}>
                   {data.materialer.map((m) => (
                     <option key={m.id} value={m.id}>
-                      {m.navn} ({kr(m.stykpris)})
+                      {m.navn} · {kr(m.stykpris)}
                     </option>
                   ))}
                 </select>
+              ) : (
+                <div className="chips" role="group" aria-label="Hurtige timetal">
+                  {HURTIGE_TIMER.map((t) => (
+                    <button type="button" key={t} className="chip tal-chip" aria-pressed={l.vaerdi === t} onClick={() => ret(l.noegle, { vaerdi: t })}>
+                      {t}
+                    </button>
+                  ))}
+                </div>
               )}
-              <input
-                className="antal"
-                aria-label={l.type === 'materiale' ? 'Antal' : 'Timer'}
-                inputMode="decimal"
-                placeholder={l.type === 'materiale' ? 'stk.' : 'timer'}
-                value={l.vaerdi}
-                onChange={(e) => ret(l.noegle, { vaerdi: e.target.value })}
-              />
-              <button
-                type="button"
-                className="slet"
-                aria-label="Fjern linje"
-                onClick={() => setLinjer((ls) => (ls.length > 1 ? ls.filter((x) => x.noegle !== l.noegle) : [nyLinje()]))}
-              >
-                ×
-              </button>
+
+              {l.type === 'timeloen' && (
+                <input
+                  aria-label="Hvilket arbejde"
+                  placeholder="Hvilket arbejde? (kommer med til mester)"
+                  value={l.beskrivelse}
+                  onChange={(e) => ret(l.noegle, { beskrivelse: e.target.value })}
+                />
+              )}
             </div>
-            {l.type === 'timeloen' && (
-              <input
-                aria-label="Arbejde"
-                placeholder="Arbejde (valgfrit) — kommer med i timeløn-filen"
-                value={l.beskrivelse}
-                onChange={(e) => ret(l.noegle, { beskrivelse: e.target.value })}
-              />
-            )}
-          </div>
-        ))}
-      </div>
-      <button type="button" onClick={() => setLinjer([...linjer, nyLinje(linjer.at(-1)?.type === 'materiale' ? 'materiale' : 'akkord', foersteMateriale)])}>
-        + Tilføj linje
-      </button>
+          ))}
 
-      <label>
-        Note til dagen (valgfri)
-        <textarea id="reg-note" rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
-      </label>
+          <button
+            type="button"
+            className="tilfoej"
+            onClick={() => setLinjer([...linjer, nyLinje(linjer.at(-1)?.type === 'akkord' ? 'timeloen' : 'akkord', foersteMateriale)])}
+          >
+            <Ikon navn="plus" str={18} /> Tilføj {kanMaterialer ? 'timer eller materialer' : 'flere timer'}
+          </button>
 
-      <Fejl tekst={fejl} />
-      {gemt && <p className="besked">{gemt}</p>}
-      <button className="primaer" disabled={travl}>
-        Gem
-      </button>
-      {!erLeder && <p className="daempet lille">Du kan kun registrere dine egne timer.</p>}
-    </form>
+          {visNote ? (
+            <label>
+              Note til dagen
+              <textarea id="reg-note" rows={2} autoFocus value={note} onChange={(e) => setNote(e.target.value)} />
+            </label>
+          ) : (
+            <button type="button" className="link" onClick={() => setVisNote(true)}>
+              + Skriv en note til dagen
+            </button>
+          )}
+        </section>
+
+        <div className="gem-bar">
+          <Fejl tekst={fejl} />
+          {gemt && (
+            <p className="besked toast" role="status">
+              <Ikon navn="check" str={18} /> {gemt}
+            </p>
+          )}
+          <button className="primaer stor-knap" disabled={travl}>
+            {travl ? 'Gemmer…' : opsummering ? `Gem ${opsummering}` : 'Gem'}
+          </button>
+        </div>
+      </form>
+
+      {(dagensTimer.length > 0 || dagensMaterialer.length > 0) && (
+        <section className="kort dagsoversigt">
+          <h3 className="mellem">
+            <span>
+              Allerede registreret {dato === iDag() ? 'i dag' : datoKort(dato)}
+              {erLeder && navn ? ` · ${navn}` : ''}
+            </span>
+            <span className="tal">{visTimer(dagensTimer.reduce((s, t) => s + t.timer, 0))} t</span>
+          </h3>
+          <ul className="liste kompakt">
+            {dagensTimer.map((t) => (
+              <li key={t.id}>
+                <div>
+                  {TIMETYPE_NAVN[t.type]}
+                  {t.beskrivelse && <span className="daempet"> · {t.beskrivelse}</span>}
+                </div>
+                <span className="tal">{visTimer(t.timer)} t</span>
+              </li>
+            ))}
+            {dagensMaterialer.map((r) => {
+              const m = data.materialer.find((x) => x.id === r.projektMaterialeId)
+              return (
+                <li key={r.id}>
+                  <div>{m?.navn ?? 'Materiale'}</div>
+                  <span className="tal">
+                    {visTimer(r.antal)} stk. · {kr(gange(r.antal, m?.stykpris ?? 0))}
+                  </span>
+                </li>
+              )
+            })}
+          </ul>
+          <p className="daempet lille">Ret eller slet under Timekalender.</p>
+        </section>
+      )}
+    </>
   )
 }

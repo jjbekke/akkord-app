@@ -73,7 +73,7 @@ export function Adgang() {
     <main className="side">
       <header className="logo">
         <h1>AKBOG</h1>
-        <p className="daempet">Akkord-, timeløns- og lønregnskab</p>
+        <p className="daempet">Registrér dagens timer på få sekunder — akkordregnskabet regner sig selv.</p>
       </header>
 
       <form className="kort" onSubmit={send} noValidate>

@@ -18,11 +18,23 @@ function FuldtRegnskab({ data, laast, genindlaes }: FaneProps) {
 
   return (
     <>
-      <section className="kort total">
-        <h3 className="mellem">
-          <span>Total</span>
-          <span className="tal">{kr(r.total.iAlt)}</span>
-        </h3>
+      <section className="kort hero">
+        <span className="hero-etiket">Samlet løn</span>
+        <span className="hero-tal tal">{kr(r.total.iAlt)}</span>
+        <div className="hero-noegletal">
+          <span>
+            <small>Akkordsum</small>
+            <strong className="tal">{kr(r.akkord.akkordsum)}</strong>
+          </span>
+          <span>
+            <small>Kr. pr. akkordtime</small>
+            <strong className="tal">{kr(r.akkord.krPrAkkordtime)}</strong>
+          </span>
+        </div>
+      </section>
+
+      <details className="kort fold">
+        <summary>Fordeling af det samlede beløb</summary>
         <Tal label="Akkordsum (materialer)" vaerdi={r.akkord.akkordsum} />
         <Tal label={`Akkordløn (${timer(r.akkord.akkordtimer)} t)`} vaerdi={r.total.akkordloen} />
         <Tal label="Overskud" vaerdi={r.total.overskud} />
@@ -30,9 +42,8 @@ function FuldtRegnskab({ data, laast, genindlaes }: FaneProps) {
         <Tal label="Syg" vaerdi={r.total.syg} />
         <Tal label="Vejrlig" vaerdi={r.total.vejrlig} />
         <Tal label="Rettelser" vaerdi={r.total.justeringer} />
-        <Tal label="Kr. pr. akkordtime i alt" vaerdi={r.akkord.krPrAkkordtime} />
         <Tal label="I alt" vaerdi={r.total.iAlt} fed />
-      </section>
+      </details>
 
       {r.advarsler.map((a) => (
         <p className="advarsel" key={a}>
@@ -40,34 +51,20 @@ function FuldtRegnskab({ data, laast, genindlaes }: FaneProps) {
         </p>
       ))}
 
-      <section className="kort">
-        <h3>Materialer</h3>
-        {r.akkord.linjer.length === 0 && <p className="daempet lille">Projektet har ingen materialer endnu.</p>}
-        <ul className="liste">
-          {r.akkord.linjer.map((l) => (
-            <li key={l.projektMaterialeId}>
-              <div>
-                <strong>{l.navn}</strong>
-                <div className="daempet lille">
-                  {timer(l.antal)} × {kr(l.stykpris)}
-                </div>
-              </div>
-              <span className="tal">{kr(l.beloeb)}</span>
-            </li>
-          ))}
-        </ul>
-        <Tal label="Akkordsum" vaerdi={r.akkord.akkordsum} fed />
-      </section>
-
+      <h2>Personer</h2>
+      {r.personer.length === 0 && <p className="daempet lille">Ingen har registreret timer endnu.</p>}
       {r.personer.map((p) => {
         const a = r.akkord.personer.find((x) => x.medlemId === p.medlemId)
         const t = r.timeloen.personer.find((x) => x.medlemId === p.medlemId)
         return (
-          <section className="kort" key={p.medlemId}>
-            <h3 className="mellem">
-              <span>{navn(p.medlemId)}</span>
+          <details className="kort fold person" key={p.medlemId}>
+            <summary>
+              <span>
+                <strong>{navn(p.medlemId)}</strong>
+                {a && <span className="daempet lille">{kr(a.krPrAkkordtime)} pr. time</span>}
+              </span>
               <span className="tal">{kr(p.iAlt)}</span>
-            </h3>
+            </summary>
             {a && (
               <>
                 <Tal label="Kr. pr. time (akkord + overskud)" vaerdi={a.krPrAkkordtime} fed />
@@ -84,9 +81,31 @@ function FuldtRegnskab({ data, laast, genindlaes }: FaneProps) {
             )}
             {p.justeringer !== 0 && <Tal label="Rettelser" vaerdi={p.justeringer} />}
             <Tal label="I alt" vaerdi={p.iAlt} fed />
-          </section>
+          </details>
         )
       })}
+
+      <details className="kort fold">
+        <summary>
+          <span>Materialer</span>
+          <span className="tal">{kr(r.akkord.akkordsum)}</span>
+        </summary>
+        {r.akkord.linjer.length === 0 && <p className="daempet lille">Projektet har ingen materialer endnu.</p>}
+        <ul className="liste">
+          {r.akkord.linjer.map((l) => (
+            <li key={l.projektMaterialeId}>
+              <div>
+                <strong>{l.navn}</strong>
+                <div className="daempet lille">
+                  {timer(l.antal)} × {kr(l.stykpris)}
+                </div>
+              </div>
+              <span className="tal">{kr(l.beloeb)}</span>
+            </li>
+          ))}
+        </ul>
+        <Tal label="Akkordsum" vaerdi={r.akkord.akkordsum} fed />
+      </details>
 
       <Rettelser data={data} laast={laast} genindlaes={genindlaes} />
       <Afslutning data={data} laast={laast} genindlaes={genindlaes} />
@@ -116,8 +135,11 @@ function Rettelser({ data, laast, genindlaes }: Pick<FaneProps, 'data' | 'laast'
   if (laast && data.justeringer.length === 0) return null
 
   return (
-    <section className="kort">
-      <h3>Rettelser</h3>
+    <details className="kort fold" open={data.justeringer.length > 0}>
+      <summary>
+        <span>Rettelser{data.justeringer.length > 0 ? ` (${data.justeringer.length})` : ''}</span>
+        <span className="daempet lille">kørsel, tillæg m.m.</span>
+      </summary>
       <p className="daempet lille">Rettelser lægges oven i det beregnede, så man altid kan se begge dele.</p>
       <ul className="liste">
         {data.justeringer.map((j) => (
@@ -160,7 +182,7 @@ function Rettelser({ data, laast, genindlaes }: Pick<FaneProps, 'data' | 'laast'
           <button disabled={travl}>Gem rettelse</button>
         </form>
       )}
-    </section>
+    </details>
   )
 }
 
@@ -247,11 +269,23 @@ function MitRegnskab({ data }: FaneProps) {
   const { loen: p, akkord: a, timeloen: t } = r
   return (
     <>
-      <section className="kort total">
-        <h3 className="mellem">
-          <span>Din løn</span>
-          <span className="tal">{kr(p.iAlt)}</span>
-        </h3>
+      <section className="kort hero">
+        <span className="hero-etiket">Din løn</span>
+        <span className="hero-tal tal">{kr(p.iAlt)}</span>
+        {a && (
+          <div className="hero-noegletal">
+            <span>
+              <small>Kr. pr. time</small>
+              <strong className="tal">{kr(a.krPrAkkordtime)}</strong>
+            </span>
+            <span>
+              <small>Akkordtimer</small>
+              <strong className="tal">{timer(a.akkordtimer)} t</strong>
+            </span>
+          </div>
+        )}
+      </section>
+      <section className="kort">
         {a && (
           <>
             <Tal label="Kr. pr. time (akkord + overskud)" vaerdi={a.krPrAkkordtime} fed />

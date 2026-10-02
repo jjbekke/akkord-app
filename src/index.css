@@ -1,17 +1,30 @@
-/* Enkel, mobil-først styling. Fokus er funktion — ikke design. */
+/*
+ * AKBOG — mobil-først. Bygget til håndværkere på farten: store tryk-flader,
+ * høj kontrast (også i sollys) og så få skridt som muligt.
+ */
 :root {
-  --bg: #f3f4f2;
+  --bg: #f3f4f1;
   --kort: #ffffff;
-  --tekst: #1d2320;
-  --daempet: #66706b;
-  --kant: #d9ddd9;
-  --accent: #2f6b4f;
+  --tekst: #16201b;
+  --daempet: #5d6963;
+  --kant: #dde2dc;
+  --accent: #1f6b47;
+  --accent-moerk: #17533a;
+  --accent-lys: #e2f0e8;
   --fejl: #b3261e;
-  --advarsel-bg: #fff4d6;
+  --fejl-lys: #fdecea;
+  --advarsel-bg: #fff3d1;
+  --stjerne: #c48a00;
+  --radius: 14px;
+  --radius-lille: 10px;
+  --bundnav: 64px;
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-size: 17px;
+  line-height: 1.4;
   color: var(--tekst);
   background: var(--bg);
   -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
 }
 
 * {
@@ -23,46 +36,109 @@ body {
   background: var(--bg);
 }
 
+a {
+  color: var(--accent);
+}
+
+/* --- Sideopbygning ------------------------------------------------------- */
+
 .side {
   max-width: 560px;
   margin: 0 auto;
   padding: calc(env(safe-area-inset-top, 0px) + 12px) 16px calc(env(safe-area-inset-bottom, 0px) + 32px);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
+}
+
+.side.med-bundnav {
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + var(--bundnav) + 24px);
 }
 
 h1 {
   font-size: 1.5rem;
+  line-height: 1.2;
   margin: 0;
 }
 
+h2 {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--daempet);
+  margin: 8px 0 0;
+}
+
 h3 {
-  font-size: 1rem;
-  margin: 0 0 4px;
+  font-size: 1.05rem;
+  margin: 0;
 }
 
 .top {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 8px;
+}
+
+.top-titel {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.top-titel h1 {
+  overflow-wrap: anywhere;
+}
+
+.tilbage {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 32px;
+  margin-left: -4px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.brand {
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+}
+
+.forside-top {
+  align-items: center;
+}
+
+.sektionstitel {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.sektionstitel a {
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
 }
 
 .kort {
   background: var(--kort);
   border: 1px solid var(--kant);
-  border-radius: 10px;
-  padding: 14px;
+  border-radius: var(--radius);
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .stak {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .raekke {
@@ -70,168 +146,26 @@ h3 {
   gap: 8px;
 }
 
-.raekke > label {
+.raekke > label,
+.raekke > select,
+.raekke > input {
   flex: 1;
   min-width: 0;
 }
 
 .raekke > .smal {
-  flex: 0 0 34%;
+  flex: 0 0 38%;
 }
 
-label {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 0.85rem;
-  color: var(--daempet);
-}
-
-/* 16px forhindrer at iOS zoomer ind på felter */
-input,
-select,
-textarea,
-button {
-  font: inherit;
-  font-size: 16px;
-  color: var(--tekst);
-}
-
-input,
-select,
-textarea {
-  width: 100%;
-  min-height: 44px;
-  padding: 8px 10px;
-  border: 1px solid var(--kant);
-  border-radius: 8px;
-  background: #fff;
-}
-
-button {
-  min-height: 44px;
-  padding: 8px 14px;
-  border: 1px solid var(--kant);
-  border-radius: 8px;
-  background: #fff;
-  cursor: pointer;
-  touch-action: manipulation;
-}
-
-button:focus-visible,
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
-}
-
-button.primaer {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
-  font-weight: 600;
-}
-
-button.stor {
-  min-height: 56px;
-  text-align: left;
-  font-weight: 600;
-}
-
-button.projekt {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-button.link {
-  border: none;
-  background: none;
-  color: var(--accent);
-  padding: 8px 0;
-}
-
-button.slet {
-  border: none;
-  background: none;
-  color: var(--daempet);
-  font-size: 1.3rem;
-  min-width: 36px;
-  padding: 0;
-}
-
-.faner,
-.knapgruppe {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: 1fr;
-  gap: 4px;
-}
-
-.faner {
-  position: sticky;
-  top: env(safe-area-inset-top, 0px);
-  z-index: 1;
-  background: var(--bg);
-  padding-block: 4px;
-}
-
-.faner button,
-.knapgruppe button {
-  padding: 8px 4px;
-  font-size: 0.9rem;
-}
-
-.faner button[aria-pressed='true'],
-.knapgruppe button[aria-pressed='true'] {
-  background: var(--tekst);
-  border-color: var(--tekst);
-  color: #fff;
-}
-
-.liste {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.liste li {
-  display: flex;
+.midt {
   align-items: center;
-  gap: 8px;
-  padding: 8px 0;
-  border-top: 1px solid var(--kant);
 }
 
-.liste li > div {
-  flex: 1;
-  min-width: 0;
+.fuld {
+  width: 100%;
 }
 
-.tallinje {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 3px 0;
-}
-
-.tallinje.fed {
-  font-weight: 700;
-  border-top: 1px solid var(--kant);
-  padding-top: 8px;
-}
-
-.tal {
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-.mellem {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-}
+/* --- Tekst ----------------------------------------------------------------- */
 
 .daempet {
   color: var(--daempet);
@@ -242,164 +176,216 @@ button.slet {
   font-size: 0.85rem;
 }
 
+.tal {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.mellem {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.foerste-stort::first-letter {
+  text-transform: uppercase;
+}
+
+.notetekst {
+  white-space: pre-wrap;
+}
+
 .fejl {
   color: var(--fejl);
+  background: var(--fejl-lys);
+  border-radius: var(--radius-lille);
+  padding: 10px 12px;
   margin: 0;
 }
 
 .advarsel {
   background: var(--advarsel-bg);
-  border-radius: 8px;
-  padding: 10px 12px;
+  border-radius: var(--radius-lille);
+  padding: 12px 14px;
   margin: 0;
-}
-
-.noter {
-  margin-top: 12px;
-}
-
-.noter form {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-/* --- AKBOG --------------------------------------------------------------- */
-
-h2 {
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--daempet);
-  margin: 12px 0 0;
-}
-
-a {
-  color: var(--accent);
-}
-
-.logo {
-  text-align: center;
-  padding: 32px 0 8px;
-}
-
-.logo h1 {
-  font-size: 2.2rem;
-  letter-spacing: 0.08em;
-  color: var(--accent);
-}
-
-.logo p {
-  margin: 4px 0 0;
-}
-
-.top-titel {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.top-titel h1 {
-  overflow-wrap: anywhere;
-}
-
-.tilbage {
-  text-decoration: none;
-  font-size: 0.9rem;
-  padding: 4px 0;
-}
-
-.midt {
-  align-items: center;
 }
 
 .besked {
-  background: #e6f2ec;
-  border-radius: 8px;
-  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--accent-lys);
+  color: var(--accent-moerk);
+  font-weight: 600;
+  border-radius: var(--radius-lille);
+  padding: 12px 14px;
   margin: 0;
 }
 
-/* Links der ligner knapper */
-a.stor,
-a.knap {
+/* --- Felter ---------------------------------------------------------------- */
+
+label {
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  gap: 2px;
-  min-height: 56px;
-  padding: 8px 14px;
-  border: 1px solid var(--kant);
-  border-radius: 8px;
-  background: #fff;
-  color: var(--tekst);
-  text-decoration: none;
-}
-
-a.knap {
-  min-height: 48px;
-  align-items: center;
+  gap: 6px;
+  font-size: 0.88rem;
   font-weight: 600;
+  color: var(--daempet);
 }
 
+/* 16px+ forhindrer at iOS zoomer ind på felter */
+input,
+select,
+textarea,
+button {
+  font: inherit;
+  font-size: 17px;
+  color: var(--tekst);
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 1.5px solid var(--kant);
+  border-radius: var(--radius-lille);
+  background: #fff;
+  font-weight: normal;
+}
+
+select {
+  appearance: none;
+  padding-right: 36px;
+  background: #fff
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%235d6963' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")
+    no-repeat right 12px center;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--accent);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-lys);
+}
+
+/* --- Knapper --------------------------------------------------------------- */
+
+button {
+  min-height: 48px;
+  padding: 10px 16px;
+  border: 1.5px solid var(--kant);
+  border-radius: var(--radius-lille);
+  background: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+button:focus-visible,
+a:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+button:active {
+  transform: scale(0.98);
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: default;
+  transform: none;
+}
+
+button.primaer,
 a.knap.primaer {
   background: var(--accent);
   border-color: var(--accent);
   color: #fff;
 }
 
-a.menu {
-  min-height: 64px;
+button.primaer:active {
+  background: var(--accent-moerk);
 }
 
-.projektraekke {
-  display: flex;
-  gap: 6px;
-  align-items: stretch;
+button.stor-knap {
+  width: 100%;
+  min-height: 58px;
+  font-size: 1.1rem;
+  border-radius: var(--radius);
 }
 
-.projektraekke > a {
-  flex: 1;
-  min-width: 0;
-}
-
-button.stjerne,
-button.ikon {
-  min-width: 44px;
-  font-size: 1.3rem;
-  padding: 0;
-  color: #b8860b;
-}
-
-button.ikon {
-  color: var(--tekst);
-}
-
-button.ikon[aria-pressed='true'] {
-  background: var(--tekst);
-  color: #fff;
-}
-
-.ikoner {
-  display: flex;
-  gap: 6px;
-  flex-shrink: 0;
+button.link {
+  border: none;
+  background: none;
+  color: var(--accent);
+  padding: 8px 0;
+  min-height: 40px;
+  text-align: left;
 }
 
 button.lille-knap {
-  min-height: 36px;
-  padding: 4px 10px;
-  font-size: 0.9rem;
+  min-height: 38px;
+  padding: 6px 12px;
+  font-size: 0.92rem;
 }
 
 button.farlig {
   color: var(--fejl);
-  border-color: var(--fejl);
+  border-color: #e7b4b0;
 }
 
-button:disabled {
-  opacity: 0.55;
-  cursor: default;
+button.slet {
+  border: none;
+  background: none;
+  color: var(--daempet);
+  font-size: 1.4rem;
+  min-width: 40px;
+  padding: 0;
+}
+
+button.ikonknap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  padding: 0;
+  border-color: transparent;
+  background: transparent;
+  color: var(--tekst);
+}
+
+button.ikonknap.lille {
+  min-width: 40px;
+  min-height: 40px;
+  color: var(--daempet);
+}
+
+button.ikonknap[aria-pressed='true']:not(.stjerne) {
+  background: var(--tekst);
+  color: #fff;
+}
+
+button.stjerne {
+  color: var(--daempet);
+}
+
+button.stjerne.valgt {
+  color: var(--stjerne);
+}
+
+.ikoner {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.ikon-svg {
+  flex-shrink: 0;
 }
 
 .knaprad {
@@ -412,42 +398,431 @@ button:disabled {
   flex: 1 1 auto;
 }
 
-.fuld {
-  width: 100%;
-}
-
-.liste li.redigerer {
-  background: #f7f8f6;
-  margin: 0 -14px;
-  padding: 10px 14px;
-}
-
-/* Trin i "Opret projekt" */
-.trin {
+button.tilfoej {
   display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-style: dashed;
+  color: var(--accent);
+  background: transparent;
+}
+
+/* Links der ligner knapper */
+a.knap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 56px;
+  padding: 10px 16px;
+  border: 1.5px solid var(--kant);
+  border-radius: var(--radius);
+  background: #fff;
+  color: var(--tekst);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+/* --- Chips (hurtigvalg) ---------------------------------------------------- */
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  position: relative;
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 8px 16px;
+  border: 1.5px solid var(--kant);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--tekst);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.chip[aria-pressed='true'],
+.chip.valgt {
+  background: var(--tekst);
+  border-color: var(--tekst);
+  color: #fff;
+}
+
+.chip.tal-chip {
+  min-width: 60px;
+  font-variant-numeric: tabular-nums;
+}
+
+.dagvaelger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.dagvaelger > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Kalenderknap: datovælgeren ligger usynligt ovenpå og åbner telefonens kalender */
+label.kalenderknap {
+  position: relative;
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  min-width: 52px;
+  min-height: 52px;
+  border: 1.5px solid var(--kant);
+  border-radius: var(--radius-lille);
+  color: var(--accent);
+  cursor: pointer;
+}
+
+label.kalenderknap input,
+.chip.dato input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  min-height: 0;
+  padding: 0;
+  border: none;
+  cursor: pointer;
+}
+
+.felt {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.feltnavn {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--daempet);
+}
+
+/* --- Forside --------------------------------------------------------------- */
+
+.projektkort {
+  position: relative;
+  display: flex;
+  align-items: center;
   gap: 4px;
+  min-height: 72px;
+  padding: 14px 12px 14px 16px;
+  border: 1px solid var(--kant);
+  border-radius: var(--radius);
+  background: var(--kort);
+  color: var(--tekst);
+}
+
+.projektkort:active {
+  background: #f7f8f6;
+}
+
+.projektkort > .ikon-svg {
+  color: var(--daempet);
+}
+
+.projektkort-tekst {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  color: var(--tekst);
+  text-decoration: none;
+}
+
+/* Hele kortet kan trykkes — linket dækker kortet, knapper ligger ovenpå */
+.projektkort-tekst::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius);
+}
+
+.projektkort > button {
+  position: relative;
+  z-index: 1;
+}
+
+.projektkort-tekst strong {
+  font-size: 1.1rem;
+  overflow-wrap: anywhere;
+}
+
+.pille {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: #eceeeb;
+  color: var(--daempet);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.pille.ok {
+  background: var(--accent-lys);
+  color: var(--accent-moerk);
+}
+
+.fliser {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.flise {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 96px;
+  padding: 12px 4px;
+  border: 1px solid var(--kant);
+  border-radius: var(--radius);
+  background: var(--kort);
+  color: var(--tekst);
+  font-size: 0.92rem;
+  font-weight: 600;
+  text-decoration: none;
+  text-align: center;
+}
+
+.flise .ikon-svg {
+  color: var(--accent);
+}
+
+.flise:active {
+  background: #f7f8f6;
+}
+
+.komigang {
+  border: 2px solid var(--accent);
+}
+
+.trinliste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.trinliste a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 60px;
+  padding: 10px 12px;
+  border-radius: var(--radius-lille);
+  background: #f6f7f5;
+  color: var(--tekst);
+  text-decoration: none;
+}
+
+.trinliste a > span:last-child {
+  display: flex;
+  flex-direction: column;
+}
+
+.trinliste a.klar {
+  opacity: 0.6;
+}
+
+.trinliste a.klar strong {
+  text-decoration: line-through;
+}
+
+.trinnummer {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+}
+
+/* --- Login ----------------------------------------------------------------- */
+
+.logo {
+  text-align: center;
+  padding: 40px 0 8px;
+}
+
+.logo h1 {
+  font-size: 2.4rem;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+}
+
+.logo p {
+  margin: 6px 0 0;
+}
+
+/* --- Projekt: faner i bunden ----------------------------------------------- */
+
+.bundnav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 4px 8px env(safe-area-inset-bottom, 0px);
+  background: rgb(255 255 255 / 0.97);
+  border-top: 1px solid var(--kant);
+  backdrop-filter: blur(8px);
+}
+
+.bundnav button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: calc(var(--bundnav) - 8px);
+  padding: 4px;
+  border: none;
+  background: none;
+  color: var(--daempet);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.bundnav button[aria-current='page'] {
+  color: var(--accent);
+}
+
+.bundnav button[aria-current='page'] .ikon-svg {
+  stroke-width: 2.5;
+}
+
+/* --- Registrér ------------------------------------------------------------- */
+
+.registrer {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.linje {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--kant);
+}
+
+.linje-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.linje-top > select {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+}
+
+.antal-felt {
+  position: relative;
+  flex: 0 0 132px;
+}
+
+input.antal {
+  padding-right: 54px;
+  text-align: right;
+  font-size: 1.25rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.enhed {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--daempet);
+  font-size: 0.85rem;
+  pointer-events: none;
+}
+
+/* Gem-knappen bliver stående over fanerne, så den altid kan nås med tommelfingeren */
+.gem-bar {
+  position: sticky;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + var(--bundnav) + 8px);
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gem-bar .stor-knap {
+  box-shadow: 0 6px 18px rgb(31 107 71 / 0.28);
+}
+
+.dagsoversigt {
+  background: #f8faf8;
+}
+
+.liste.kompakt li {
+  padding: 6px 0;
+}
+
+/* --- Lister ---------------------------------------------------------------- */
+
+.liste {
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-.trin li {
+.liste li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 0;
+  border-top: 1px solid var(--kant);
+}
+
+.liste li:first-child {
+  border-top: none;
+}
+
+.liste li > div {
   flex: 1;
-  text-align: center;
-  font-size: 0.85rem;
-  padding: 6px 2px;
-  border-bottom: 3px solid var(--kant);
-  color: var(--daempet);
+  min-width: 0;
 }
 
-.trin li[aria-current='step'] {
-  border-color: var(--accent);
-  color: var(--tekst);
-  font-weight: 600;
-}
-
-.trin li.klaret {
-  border-color: #9cc3ae;
+.liste li.redigerer {
+  background: #f6f7f5;
+  margin: 0 -16px;
+  padding: 12px 16px;
 }
 
 .liste li.valg {
@@ -457,47 +832,150 @@ button:disabled {
 label.afkryds {
   flex-direction: row;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   flex: 1;
-  min-height: 44px;
+  min-height: 48px;
   font-size: 1rem;
+  font-weight: normal;
   color: var(--tekst);
 }
 
 label.afkryds input {
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   min-height: 0;
   flex-shrink: 0;
+  accent-color: var(--accent);
 }
 
-/* Registrér */
-.linjer {
+.tallinje {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+}
+
+.tallinje.fed {
+  font-weight: 700;
+  border-top: 1px solid var(--kant);
+  padding-top: 10px;
+}
+
+.maerke {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--accent-lys);
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+/* --- Regnskab -------------------------------------------------------------- */
+
+.kort.hero {
+  gap: 4px;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.hero-etiket {
+  font-size: 0.9rem;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+.hero-tal {
+  font-size: 2.1rem;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.hero-noegletal {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 12px;
+  border-top: 1px solid rgb(255 255 255 / 0.25);
+}
+
+.hero-noegletal span {
   display: flex;
   flex-direction: column;
+}
+
+.hero-noegletal small {
+  font-size: 0.8rem;
+  opacity: 0.85;
+}
+
+details.fold {
   gap: 8px;
 }
 
-.linje {
+details.fold > summary {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding-bottom: 8px;
-  border-bottom: 1px dashed var(--kant);
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  list-style: none;
+  cursor: pointer;
+  font-weight: 700;
 }
 
-.linje .raekke > select {
+details.fold > summary::-webkit-details-marker {
+  display: none;
+}
+
+details.fold > summary::after {
+  content: '';
+  flex: 0 0 10px;
+  height: 10px;
+  margin-left: 4px;
+  border-right: 2.5px solid var(--daempet);
+  border-bottom: 2.5px solid var(--daempet);
+  transform: rotate(45deg) translateY(-3px);
+  transition: transform 0.15s;
+}
+
+details.fold[open] > summary::after {
+  transform: rotate(-135deg) translateY(-3px);
+}
+
+details.fold[open] > summary {
+  margin-bottom: 4px;
+}
+
+details.fold > summary > span:first-child {
   flex: 1;
   min-width: 0;
 }
 
-input.antal {
-  flex: 0 0 80px;
-  width: 80px;
-  text-align: right;
+details.person > summary > span:first-child {
+  display: flex;
+  flex-direction: column;
 }
 
-/* Timekalender */
+details.person > summary strong {
+  font-size: 1.05rem;
+}
+
+button.afslut {
+  min-height: 58px;
+  margin-top: 8px;
+}
+
+.kort.farezone {
+  border-color: #e7b4b0;
+}
+
+/* --- Timekalender ---------------------------------------------------------- */
+
 .datonav {
   display: flex;
   gap: 8px;
@@ -505,7 +983,7 @@ input.antal {
 }
 
 .datonav > button {
-  min-width: 48px;
+  min-width: 52px;
   font-size: 1.3rem;
 }
 
@@ -514,41 +992,55 @@ label.kalender {
   flex-direction: row;
   align-items: center;
   gap: 6px;
-  font-size: 1.2rem;
   color: var(--tekst);
 }
 
-.foerste-stort::first-letter {
-  text-transform: uppercase;
+/* --- Opret projekt --------------------------------------------------------- */
+
+.trin {
+  display: flex;
+  gap: 6px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
-.notetekst {
-  white-space: pre-wrap;
-}
-
-/* Regnskab */
-.kort.total {
-  border-color: var(--accent);
-  border-width: 2px;
-}
-
-button.afslut {
-  min-height: 56px;
-  margin-top: 8px;
-}
-
-.maerke {
-  display: inline-block;
-  margin-left: 6px;
-  padding: 1px 6px;
-  border-radius: 999px;
-  background: #e6f2ec;
-  color: var(--accent);
-  font-size: 0.75rem;
+.trin li {
+  flex: 1;
+  text-align: center;
+  font-size: 0.85rem;
   font-weight: 600;
-  vertical-align: middle;
+  padding: 6px 2px;
+  border-bottom: 4px solid var(--kant);
+  color: var(--daempet);
 }
 
-.kort.farezone {
-  border-color: #e7b4b0;
+.trin li[aria-current='step'] {
+  border-color: var(--accent);
+  color: var(--tekst);
+}
+
+.trin li.klaret {
+  border-color: #9cc3ae;
+}
+
+/* --- Små skærme ------------------------------------------------------------ */
+
+@media (max-width: 360px) {
+  .side {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .antal-felt {
+    flex-basis: 112px;
+  }
+
+  .fliser {
+    gap: 6px;
+  }
+
+  .flise {
+    font-size: 0.82rem;
+  }
 }

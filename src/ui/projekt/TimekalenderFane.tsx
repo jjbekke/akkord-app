@@ -3,7 +3,7 @@ import { repo } from '../../data'
 import { gange, kr, laesCenti, timer as visTimer, tal } from '../../domain/tal'
 import { TIMETYPE_NAVN, type MaterialeRegistrering, type Note, type TimeRegistrering, type TimeType } from '../../domain/typer'
 import { datoKort, datoLang, flytDag, iDag, useBruger, useHandling } from '../faelles'
-import { Fejl } from '../komponenter'
+import { Fejl, Ikon } from '../komponenter'
 import type { FaneProps } from './ProjektSide'
 
 const TIMETYPER = Object.keys(TIMETYPE_NAVN) as TimeType[]
@@ -24,14 +24,13 @@ export function TimekalenderFane(props: FaneProps) {
       <section className="kort">
         <div className="datonav">
           <button aria-label="Forrige dag" onClick={() => setDato(flytDag(dato, -1))}>
-            ‹
+            <Ikon navn="tilbage" />
           </button>
           <label className="kalender" aria-label="Vælg dato">
-            <span>📅</span>
             <input type="date" value={dato} onChange={(e) => e.target.value && setDato(e.target.value)} />
           </label>
           <button aria-label="Næste dag" onClick={() => setDato(flytDag(dato, 1))}>
-            ›
+            <Ikon navn="frem" />
           </button>
         </div>
         <div className="mellem">

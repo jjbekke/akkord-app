@@ -87,14 +87,33 @@ export class SupabaseRepository implements Repository {
     const id = await brugerId()
     const [projekter, mine, favoritter] = await Promise.all([
       supabase.from('projekter').select('*').order('oprettet', { ascending: false }),
-      supabase.from('projekt_medlemmer').select('projekt_id, rolle').eq('bruger_id', id),
+      supabase.from('projekt_medlemmer').select('id, projekt_id, rolle').eq('bruger_id', id),
       supabase.from('favoritter').select('projekt_id'),
     ])
-    const roller = new Map(tjek(mine).map((m) => [m.projekt_id as string, m.rolle as Medlem['rolle']]))
+    const medlemskaber = tjek(mine)
+    const roller = new Map(medlemskaber.map((m) => [m.projekt_id as string, m.rolle as Medlem['rolle']]))
     const fav = new Set(tjek(favoritter).map((f) => f.projekt_id as string))
+
+    // Egne timer i dag pr. projekt
+    const iDag = new Date().toLocaleDateString('sv-SE') // ÅÅÅÅ-MM-DD i lokal tid
+    const timerIDag = new Map<string, number>()
+    if (medlemskaber.length) {
+      const idag = tjek(
+        await supabase
+          .from('timer')
+          .select('projekt_id, timer')
+          .eq('dato', iDag)
+          .in(
+            'medlem_id',
+            medlemskaber.map((m) => m.id as string),
+          ),
+      )
+      for (const t of idag) timerIDag.set(t.projekt_id as string, (timerIDag.get(t.projekt_id as string) ?? 0) + (t.timer as number))
+    }
+
     return tjek(projekter).map((r) => {
       const p = tilProjekt(r)
-      return { ...p, favorit: fav.has(p.id), rolle: roller.get(p.id) ?? 'medlem' }
+      return { ...p, favorit: fav.has(p.id), rolle: roller.get(p.id) ?? 'medlem', mineTimerIDag: timerIDag.get(p.id) ?? 0 }
     })
   }
 

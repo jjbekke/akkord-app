@@ -20,6 +20,8 @@ export interface ProjektOversigt extends Projekt {
   favorit: boolean
   /** Den indloggede brugers rolle i projektet */
   rolle: Medlem['rolle']
+  /** Brugerens egne timer i dag (hundrededele) — til "I dag: 7,5 t" på forsiden */
+  mineTimerIDag: number
 }
 
 export interface NytProjekt {
