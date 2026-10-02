@@ -106,6 +106,10 @@ begin
   get diagnostics n = row_count;
   assert n = 0, 'medlem kan ikke afslutte';
 
+  delete from public.projekter where id = v_projekt;
+  get diagnostics n = row_count;
+  assert n = 0, 'medlem kan ikke slette projektet';
+
   reset role;
 
   -- === Som fremmed ===
@@ -172,7 +176,26 @@ begin
   ok := false;
   begin update public.projekt_medlemmer set rolle = 'medlem' where id = v_medlem_row; exception when raise_exception then ok := true; end;
   assert ok, 'kun opretter ændrer roller';
+  delete from public.projekter where id = v_projekt;
+  get diagnostics n = row_count;
+  assert n = 0, 'projektleder der ikke er opretter kan ikke slette';
   reset role;
+
+  -- Sletning af en person i kartoteket fjerner koblingen men bevarer adgangen
+  perform set_config('request.jwt.claims', json_build_object('sub', leder, 'role', 'authenticated')::text, true);
+  set local role authenticated;
+  delete from public.personer where id = v_person_fremmed;
+  assert (select person_id from public.projekt_medlemmer where projekt_id = v_projekt and navn = 'Uden login') is null, 'person slettet: kobling fjernet';
+  assert (select bruger_id from public.projekt_medlemmer where projekt_id = v_projekt and navn = 'Uden login') = fremmed, 'person slettet: adgang bevaret';
+
+  -- Opretteren sletter projektet — alt følger med
+  delete from public.projekter where id = v_projekt;
+  get diagnostics n = row_count;
+  assert n = 1, 'opretter kan slette projektet';
+  reset role;
+  assert (select count(*) from public.projekt_medlemmer where projekt_id = v_projekt) = 0, 'medlemmer slettet med';
+  assert (select count(*) from public.timer where projekt_id = v_projekt) = 0, 'timer slettet med';
+  assert (select count(*) from public.materiale_registreringer where projekt_id = v_projekt) = 0, 'materialeregistreringer slettet med';
 
   raise exception 'ALLE RLS-TESTS OK';
 end $$;
