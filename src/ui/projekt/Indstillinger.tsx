@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { repo } from '../../data'
 import { kr, laesKroner, tal } from '../../domain/tal'
-import type { Medlem } from '../../domain/typer'
-import { useBruger, useHandling, useHent } from '../faelles'
+import type { Medlem, Person } from '../../domain/typer'
+import { gaaTil, useBruger, useHandling, useHent } from '../faelles'
 import { Fejl } from '../komponenter'
 import type { FaneProps } from './ProjektSide'
 
@@ -17,7 +17,13 @@ export function Indstillinger({ data, laast, genindlaes }: FaneProps) {
   const [nyTillaeg, setNyTillaeg] = useState('')
   const [nytMateriale, setNytMateriale] = useState('')
 
-  if (laast) return <p className="daempet">Projektet er afsluttet. Genåbn det under Regnskab for at ændre indstillinger.</p>
+  if (laast)
+    return (
+      <>
+        <p className="daempet">Projektet er afsluttet. Genåbn det under Regnskab for at ændre indstillinger.</p>
+        {erOpretter && <SletProjekt data={data} />}
+      </>
+    )
 
   const [personer, materialer] = kartotek.data ?? [[], []]
   const ledigePersoner = personer.filter((p) => !data.medlemmer.some((m) => m.personId === p.id || (p.brugerId && m.brugerId === p.brugerId)))
@@ -71,6 +77,7 @@ export function Indstillinger({ data, laast, genindlaes }: FaneProps) {
               erOpretter={erOpretter}
               erOpretterSelv={m.brugerId === data.projekt.oprettetAf}
               harRegistreringer={data.timer.some((t) => t.medlemId === m.id) || data.justeringer.some((j) => j.medlemId === m.id)}
+              ledigePersoner={ledigePersoner}
               genindlaes={genindlaes}
             />
           ))}
@@ -150,7 +157,36 @@ export function Indstillinger({ data, laast, genindlaes }: FaneProps) {
         )}
       </section>
       <Fejl tekst={handling.fejl || kartotek.fejl} />
+      {erOpretter && <SletProjekt data={data} />}
     </>
+  )
+}
+
+/** Kun opretteren kan slette projektet — det kræver, at man skriver navnet. */
+function SletProjekt({ data }: { data: FaneProps['data'] }) {
+  const { koer, fejl, travl } = useHandling()
+
+  const slet = () => {
+    const svar = prompt(
+      `Sletning kan ikke fortrydes. Alle timer, materialer, noter og filer i projektet slettes.\n\nSkriv projektets navn for at slette det:\n${data.projekt.navn}`,
+    )
+    if (svar === null) return
+    if (svar.trim() !== data.projekt.navn.trim()) return alert('Navnet passede ikke — projektet er ikke slettet.')
+    koer(async () => {
+      await repo.sletProjekt(data.projekt.id)
+      gaaTil('/projekter')
+    })
+  }
+
+  return (
+    <section className="kort farezone">
+      <h3>Slet projekt</h3>
+      <p className="daempet lille">Kun du, der har oprettet projektet, kan slette det. Det kan ikke fortrydes.</p>
+      <Fejl tekst={fejl} />
+      <button className="farlig" disabled={travl} onClick={slet}>
+        Slet projektet
+      </button>
+    </section>
   )
 }
 
@@ -159,26 +195,32 @@ function MedlemRaekke({
   erOpretter,
   erOpretterSelv,
   harRegistreringer,
+  ledigePersoner,
   genindlaes,
 }: {
   medlem: Medlem
   erOpretter: boolean
   erOpretterSelv: boolean
   harRegistreringer: boolean
+  ledigePersoner: Person[]
   genindlaes: () => void
 }) {
   const [aaben, setAaben] = useState(false)
   const [sats, setSats] = useState(tal(medlem.timesats))
   const [tillaeg, setTillaeg] = useState(medlem.overskudPrTime === undefined ? '' : tal(medlem.overskudPrTime))
+  const [kobl, setKobl] = useState('')
   const { koer, fejl, setFejl, travl } = useHandling(genindlaes)
+  const erLeder = medlem.rolle === 'projektleder'
 
-  const gem = async (aendring: Partial<Medlem> = {}) => {
+  const gem = async () => {
     const timesats = laesKroner(sats)
     const overskud = tillaeg.trim() === '' ? undefined : laesKroner(tillaeg)
     if (timesats === null || timesats < 0) return setFejl('Ugyldig timesats')
     if (overskud === null || (overskud !== undefined && overskud < 0)) return setFejl('Ugyldigt lærlingetillæg')
-    if (await koer(() => repo.gemMedlem({ ...medlem, timesats, overskudPrTime: overskud, ...aendring }))) setAaben(false)
+    if (await koer(() => repo.gemMedlem({ ...medlem, timesats, overskudPrTime: overskud }))) setAaben(false)
   }
+
+  const login = medlem.brugerId ? null : medlem.personId ? 'ingen konto endnu' : 'ikke koblet til en person'
 
   return (
     <li className={aaben ? 'redigerer' : ''}>
@@ -186,14 +228,11 @@ function MedlemRaekke({
         <div className="mellem">
           <span>
             <strong>{medlem.navn}</strong>
-            <span className="daempet lille">
-              {' '}
-              · {medlem.rolle === 'projektleder' ? 'Projektleder' : 'Medlem'}
-              {!medlem.brugerId && ' · ingen login'}
-            </span>
+            {erLeder && <span className="maerke">Projektleder</span>}
             <div className="daempet lille">
               {kr(medlem.timesats)}/t
               {medlem.overskudPrTime !== undefined && ` · lærlingetillæg ${kr(medlem.overskudPrTime)}/t`}
+              {login && ` · ${login}`}
             </div>
           </span>
           {!aaben && (
@@ -202,6 +241,19 @@ function MedlemRaekke({
             </button>
           )}
         </div>
+
+        {erOpretter && !erOpretterSelv && (
+          <label className="afkryds">
+            <input
+              type="checkbox"
+              checked={erLeder}
+              disabled={travl}
+              onChange={(e) => koer(() => repo.gemMedlem({ ...medlem, rolle: e.target.checked ? 'projektleder' : 'medlem' }))}
+            />
+            <span>Projektleder</span>
+          </label>
+        )}
+
         {aaben && (
           <>
             <div className="raekke">
@@ -214,17 +266,36 @@ function MedlemRaekke({
                 <input inputMode="decimal" placeholder="Ingen" value={tillaeg} onChange={(e) => setTillaeg(e.target.value)} />
               </label>
             </div>
+            {!medlem.personId && (
+              <div className="stak">
+                <label>
+                  Kobl til person (giver login-adgang via e-mail)
+                  <select value={kobl} onChange={(e) => setKobl(e.target.value)}>
+                    <option value="">Vælg person fra dit kartotek…</option>
+                    {ledigePersoner.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.navn}
+                        {p.email ? ` (${p.email})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <button disabled={travl || !kobl} onClick={() => koer(() => repo.koblMedlem(medlem.id, kobl))}>
+                  Kobl
+                </button>
+                {ledigePersoner.length === 0 && (
+                  <p className="daempet lille">
+                    <a href="#/personer">Opret personen</a> med e-mail i dit kartotek først.
+                  </p>
+                )}
+              </div>
+            )}
             <Fejl tekst={fejl} />
             <div className="knaprad">
-              <button className="primaer" disabled={travl} onClick={() => gem()}>
+              <button className="primaer" disabled={travl} onClick={gem}>
                 Gem
               </button>
               <button onClick={() => setAaben(false)}>Fortryd</button>
-              {erOpretter && !erOpretterSelv && medlem.brugerId && (
-                <button disabled={travl} onClick={() => gem({ rolle: medlem.rolle === 'projektleder' ? 'medlem' : 'projektleder' })}>
-                  {medlem.rolle === 'projektleder' ? 'Fjern som projektleder' : 'Gør til projektleder'}
-                </button>
-              )}
               {!erOpretterSelv && !harRegistreringer && (
                 <button
                   className="farlig"
@@ -240,7 +311,9 @@ function MedlemRaekke({
             )}
           </>
         )}
+        {!aaben && <Fejl tekst={fejl} />}
       </div>
     </li>
   )
 }
+

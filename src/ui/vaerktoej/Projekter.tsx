@@ -1,5 +1,5 @@
 import { repo } from '../../data'
-import { datoKort, gaaTil, useHandling, useHent } from '../faelles'
+import { datoKort, useHandling, useHent } from '../faelles'
 import { Fejl, Henter, Top } from '../komponenter'
 
 export function Projekter() {
@@ -8,13 +8,6 @@ export function Projekter() {
 
   const aktive = projekter?.filter((p) => !p.afsluttet) ?? []
   const afsluttede = projekter?.filter((p) => p.afsluttet) ?? []
-  const harEksempel = projekter?.some((p) => p.navn === 'Viby (eksempel)')
-
-  const hentEksempel = () =>
-    handling.koer(async () => {
-      const id = await repo.opretEksempelprojekt()
-      gaaTil(`/projekt/${id}`)
-    })
 
   const raekke = (p: NonNullable<typeof projekter>[number]) => (
     <div key={p.id} className="projektraekke">
@@ -55,11 +48,6 @@ export function Projekter() {
               <h2>Afsluttede</h2>
               <div className="stak">{afsluttede.map(raekke)}</div>
             </>
-          )}
-          {!harEksempel && (
-            <button className="link" disabled={handling.travl} onClick={hentEksempel}>
-              Hent Viby-regnskabet som eksempelprojekt
-            </button>
           )}
         </>
       )}

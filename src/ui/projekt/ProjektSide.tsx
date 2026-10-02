@@ -62,7 +62,7 @@ export function ProjektSide({ projektId, fane = 'registrer' }: { projektId: stri
               className="ikon"
               aria-label="Projektindstillinger"
               aria-pressed={fane === 'indstillinger'}
-              onClick={() => vis('indstillinger')}
+              onClick={() => vis(fane === 'indstillinger' ? 'registrer' : 'indstillinger')}
             >
               ⚙
             </button>

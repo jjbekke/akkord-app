@@ -112,5 +112,50 @@ describe.skipIf(!KODE)('AKBOG mod Supabase', () => {
     ok(await leder.from('projekter').update({ afsluttet: null }).eq('id', projektId))
     ok(await leder.from('timer').insert({ projekt_id: projektId, medlem_id: mig.id, dato: '2026-10-03', type: 'akkord', timer: 100 }))
     ok(await leder.storage.from('projektfiler').remove([sti]))
+
+    // Ryd op: opretteren sletter projektet — alt følger med
+    ok(await leder.from('projekter').delete().eq('id', projektId))
+    expect(ok(await leder.from('timer').select('id').eq('projekt_id', projektId))).toHaveLength(0)
+  }, 60_000)
+
+  it('medlem uden login kan blive projektleder, kobles til en person, og projektet kan slettes', async () => {
+    const leder = await logInd('leder@akbog-test.dk')
+    const medlem = await logInd('medlem@akbog-test.dk')
+    const pMedlem = ok(await leder.from('personer').select('*').eq('email', 'medlem@akbog-test.dk').single())
+
+    const projektId = ok(await leder.rpc('opret_projekt', { p_navn: 'E2E kobling', p_medlemmer: [], p_materialer: [] })) as string
+    const uden = ok(
+      await leder.from('projekt_medlemmer').insert({ projekt_id: projektId, navn: 'Uden login', timesats: 9000 }).select('id').single(),
+    )
+
+    // Projektlederrollen kan gives, selvom personen ikke har login
+    ok(await leder.from('projekt_medlemmer').update({ rolle: 'projektleder' }).eq('id', uden.id))
+    expect(ok(await leder.from('projekt_medlemmer').select('rolle').eq('id', uden.id).single()).rolle).toBe('projektleder')
+
+    // Medlemmet ser ikke projektet, før det kobles til personen med medlemmets e-mail
+    expect(ok(await medlem.from('projekter').select('id').eq('id', projektId))).toHaveLength(0)
+    ok(await leder.from('projekt_medlemmer').update({ person_id: pMedlem.id }).eq('id', uden.id))
+    expect(ok(await medlem.from('projekter').select('id').eq('id', projektId))).toHaveLength(1)
+    const mig = ok(await leder.from('personer').select('id').eq('bruger_id', LEDER_ID).single())
+    const igen = await leder.from('projekt_medlemmer').update({ person_id: mig.id }).eq('id', uden.id)
+    expect(igen.error?.message).toMatch(/allerede koblet/) // en kobling kan ikke laves om
+
+    // Materialer med registreringer og en fil — sletning skal stadig gå igennem
+    const pm = ok(await leder.from('projekt_materialer').insert({ projekt_id: projektId, navn: 'Sten', stykpris: 100 }).select('id').single())
+    ok(await leder.from('materiale_registreringer').insert({ projekt_id: projektId, projekt_materiale_id: pm.id, dato: '2026-10-01', antal: 100 }))
+    const fjernBrugt = await leder.from('projekt_materialer').delete().eq('id', pm.id)
+    expect(fjernBrugt.error?.code).toBe('23503') // et brugt materiale kan ikke fjernes alene
+    ok(await leder.storage.from('projektfiler').upload(`${projektId}/fil.pdf`, new Blob(['x'], { type: 'application/pdf' })))
+
+    // Medlemmet (nu projektleder, men ikke opretter) kan ikke slette
+    const forsoeg = ok(await medlem.from('projekter').delete().eq('id', projektId).select('id'))
+    expect(forsoeg).toHaveLength(0)
+
+    // Opretteren sletter: filer først (som appen gør), så projektet
+    const filer = ok(await leder.storage.from('projektfiler').list(projektId))
+    ok(await leder.storage.from('projektfiler').remove(filer.map((f) => `${projektId}/${f.name}`)))
+    expect(ok(await leder.from('projekter').delete().eq('id', projektId).select('id'))).toHaveLength(1)
+    expect(ok(await leder.from('projekt_medlemmer').select('id').eq('projekt_id', projektId))).toHaveLength(0)
+    expect(ok(await leder.storage.from('projektfiler').list(projektId))).toHaveLength(0)
   }, 60_000)
 })

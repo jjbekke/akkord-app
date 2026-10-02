@@ -12,8 +12,6 @@ npm test        # beregningsmotoren testes mod Viby-regnskabet
 npm run build
 ```
 
-Viby-regnskabet kan hentes som eksempelprojekt under Værktøjskasse → Projekter.
-
 ## Struktur
 
 ```

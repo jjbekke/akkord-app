@@ -1,6 +1,5 @@
 import { FunctionsHttpError } from '@supabase/supabase-js'
 import type { Id, Materiale, MaterialeRegistrering, Medlem, Person, TimeRegistrering } from '../domain/typer'
-import { vibyEksempel } from './eksempel'
 import { hentProjektData, tilMateriale, tilPerson, tilProjekt, type Db } from './raekker'
 import type { MitRegnskab, NytProjekt, ProjektOversigt, Repository } from './repository'
 import { supabase } from './supabase'
@@ -110,61 +109,6 @@ export class SupabaseRepository implements Repository {
     return id as Id
   }
 
-  /** Viby-regnskabet som et rigtigt projekt, hvor den indloggede bruger er projektleder. */
-  async opretEksempelprojekt() {
-    const e = vibyEksempel()
-    const projektId = await this.opretProjekt({ navn: 'Viby (eksempel)', medlemmer: [], materialeIder: [] })
-
-    const medlemmer = tjek(
-      await supabase
-        .from('projekt_medlemmer')
-        .insert(
-          e.medlemmer.map((m) => ({
-            projekt_id: projektId,
-            navn: m.navn,
-            timesats: m.timesats,
-            overskud_pr_time: m.overskudPrTime ?? null,
-          })),
-        )
-        .select('id, navn'),
-    )
-    const materialer = tjek(
-      await supabase
-        .from('projekt_materialer')
-        .insert(e.materialer.map((m) => ({ projekt_id: projektId, navn: m.navn, stykpris: m.stykpris })))
-        .select('id, navn'),
-    )
-    const nytId = (liste: { id: unknown; navn: unknown }[], gammel: { navn: string } | undefined) =>
-      liste.find((x) => x.navn === gammel?.navn)!.id as Id
-    const medlem = (id: Id) => nytId(medlemmer, e.medlemmer.find((m) => m.id === id))
-    const materiale = (id: Id) => nytId(materialer, e.materialer.find((m) => m.id === id))
-
-    tjek(
-      await supabase.from('timer').insert(
-        e.timer.map((t) => ({
-          projekt_id: projektId,
-          medlem_id: medlem(t.medlemId),
-          dato: t.dato,
-          type: t.type,
-          timer: t.timer,
-          beskrivelse: t.beskrivelse ?? null,
-        })),
-      ),
-    )
-    tjek(
-      await supabase.from('materiale_registreringer').insert(
-        e.materialeRegistreringer.map((r) => ({
-          projekt_id: projektId,
-          projekt_materiale_id: materiale(r.projektMaterialeId),
-          dato: r.dato,
-          antal: r.antal,
-        })),
-      ),
-    )
-    tjek(await supabase.from('noter').insert(e.noter.map((n) => ({ projekt_id: projektId, dato: n.dato, tekst: n.tekst }))))
-    return projektId
-  }
-
   async saetFavorit(projektId: Id, favorit: boolean) {
     if (favorit) tjek(await supabase.from('favoritter').insert({ projekt_id: projektId }))
     else tjek(await supabase.from('favoritter').delete().eq('projekt_id', projektId))
@@ -198,6 +142,17 @@ export class SupabaseRepository implements Repository {
     if (r.length === 0) throw new Error('Kun projektledere kan afslutte eller genåbne projektet')
   }
 
+  async sletProjekt(projektId: Id) {
+    // Filerne først — de slettes ikke af databasen
+    const { data: filer } = await supabase.storage.from('projektfiler').list(projektId)
+    if (filer?.length) {
+      const { error } = await supabase.storage.from('projektfiler').remove(filer.map((f) => `${projektId}/${f.name}`))
+      if (error) throw new Error(`Filerne kunne ikke slettes: ${error.message}`)
+    }
+    const r = tjek(await supabase.from('projekter').delete().eq('id', projektId).select('id'))
+    if (r.length === 0) throw new Error('Kun den der har oprettet projektet, kan slette det')
+  }
+
   // --- Medlemmer og projektmaterialer -------------------------------------
 
   async tilfoejMedlem(projektId: Id, person: Person, overskudPrTime?: number) {
@@ -221,6 +176,11 @@ export class SupabaseRepository implements Repository {
         .select('id'),
     )
     if (r.length === 0) throw new Error('Ændringen blev ikke gemt — kun projektledere kan rette medlemmer')
+  }
+
+  async koblMedlem(medlemId: Id, personId: Id) {
+    const r = tjek(await supabase.from('projekt_medlemmer').update({ person_id: personId }).eq('id', medlemId).select('id'))
+    if (r.length === 0) throw new Error('Medlemmet blev ikke koblet')
   }
 
   async fjernMedlem(id: Id) {

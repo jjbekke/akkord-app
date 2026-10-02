@@ -59,16 +59,19 @@ export interface Repository {
 
   hentProjekter(): Promise<ProjektOversigt[]>
   opretProjekt(projekt: NytProjekt): Promise<Id>
-  opretEksempelprojekt(): Promise<Id>
   saetFavorit(projektId: Id, favorit: boolean): Promise<void>
 
   hentProjektData(projektId: Id): Promise<ProjektData>
   hentMitRegnskab(projektId: Id): Promise<MitRegnskab>
   omdoebProjekt(projektId: Id, navn: string): Promise<void>
   afslutProjekt(projektId: Id, afsluttet: boolean): Promise<void>
+  /** Kun opretteren. Sletter også projektets filer. */
+  sletProjekt(projektId: Id): Promise<void>
 
   tilfoejMedlem(projektId: Id, person: Person, overskudPrTime?: number): Promise<void>
   gemMedlem(medlem: Medlem): Promise<void>
+  /** Kobl et medlem uden person (fx fra Viby-eksemplet) til en person i eget kartotek. */
+  koblMedlem(medlemId: Id, personId: Id): Promise<void>
   fjernMedlem(id: Id): Promise<void>
   tilfoejProjektMateriale(projektId: Id, materiale: Materiale): Promise<void>
   fjernProjektMateriale(id: Id): Promise<void>

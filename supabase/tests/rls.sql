@@ -15,6 +15,8 @@ declare
   v_pm uuid;
   v_medlem_row uuid;
   v_leder_row uuid;
+  v_uden uuid;
+  v_person_fremmed uuid;
   n int;
   ok boolean;
 begin
@@ -134,6 +136,33 @@ begin
   insert into public.projekt_filer (projekt_id, type, filnavn, sti) values (v_projekt, 'kvittering', 'k.pdf', v_projekt || '/k.pdf');
   update public.projekter set afsluttet = null where id = v_projekt;
   insert into public.timer (projekt_id, medlem_id, dato, type, timer) values (v_projekt, v_leder_row, '2026-10-03', 'akkord', 100);
+
+  -- Medlem uden login (som i Viby-eksemplet): kan blive projektleder og kobles til en person
+  insert into public.projekt_medlemmer (projekt_id, navn, timesats) values (v_projekt, 'Uden login', 9000) returning id into v_uden;
+  update public.projekt_medlemmer set rolle = 'projektleder' where id = v_uden;
+  assert (select rolle from public.projekt_medlemmer where id = v_uden) = 'projektleder', 'medlem uden login kan blive leder';
+  insert into public.personer (navn, email, timesats) values ('Frede', 'fremmed@test.dk', 9000) returning id into v_person_fremmed;
+  update public.projekt_medlemmer set person_id = v_person_fremmed where id = v_uden;
+  assert (select bruger_id from public.projekt_medlemmer where id = v_uden) = fremmed, 'kobling giver login-adgang';
+  ok := false;
+  begin update public.projekt_medlemmer set person_id = v_person_medlem where id = v_uden; exception when raise_exception then ok := true; end;
+  assert ok, 'koblet medlem kan ikke kobles om';
+  reset role;
+
+  -- En person fra en andens kartotek kan ikke bruges
+  perform set_config('request.jwt.claims', json_build_object('sub', medlem, 'role', 'authenticated')::text, true);
+  set local role authenticated;
+  insert into public.projekt_medlemmer (projekt_id, navn, timesats) values (v_projekt, 'Endnu en', 9000) returning id into v_uden;
+  ok := false;
+  begin update public.projekt_medlemmer set person_id = v_person_fremmed where id = v_uden; exception when raise_exception then ok := true; end;
+  assert ok, 'kan ikke koble til en andens person';
+  delete from public.projekt_medlemmer where id = v_uden;
+  reset role;
+
+  -- Den koblede bruger ser nu projektet
+  perform set_config('request.jwt.claims', json_build_object('sub', fremmed, 'role', 'authenticated')::text, true);
+  set local role authenticated;
+  assert (select count(*) from public.projekter where id = v_projekt) = 1, 'koblet bruger ser projektet';
   reset role;
 
   -- Ny projektleder (ikke opretter) ser alt, men kan ikke ændre roller

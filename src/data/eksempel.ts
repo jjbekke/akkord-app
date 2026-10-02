@@ -2,7 +2,7 @@ import type { ProjektData } from '../domain/typer.ts'
 
 // Akkordregnskabet fra Viby (17/8–18/9) indtastet som rå data: timer, antal og satser.
 // Timerne er samlet på én dag, fordi den oprindelige opgørelse kun har totaler.
-// Bruges både som facit i testene og som eksempelprojekt i appen (Værktøjskasse → Projekter).
+// Bruges som facit i testene.
 
 export const PROJEKT_ID = 'viby'
 

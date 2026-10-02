@@ -536,3 +536,19 @@ button.afslut {
   min-height: 56px;
   margin-top: 8px;
 }
+
+.maerke {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: #e6f2ec;
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 600;
+  vertical-align: middle;
+}
+
+.kort.farezone {
+  border-color: #e7b4b0;
+}
