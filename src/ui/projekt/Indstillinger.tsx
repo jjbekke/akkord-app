@@ -174,7 +174,7 @@ function SletProjekt({ data }: { data: FaneProps['data'] }) {
     if (svar.trim() !== data.projekt.navn.trim()) return alert('Navnet passede ikke — projektet er ikke slettet.')
     koer(async () => {
       await repo.sletProjekt(data.projekt.id)
-      gaaTil('/projekter')
+      gaaTil('/')
     })
   }
 

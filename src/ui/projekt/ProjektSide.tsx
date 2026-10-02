@@ -33,7 +33,7 @@ export function ProjektSide({ projektId, fane = 'registrer' }: { projektId: stri
   if (!data)
     return (
       <main className="side">
-        <Top titel="Projekt" tilbage="/projekter" tilbageTekst="Projekter" />
+        <Top titel="Projekt" tilbage="/" tilbageTekst="AKBOG" />
         <Henter fejl={fejl} />
       </main>
     )
@@ -47,7 +47,7 @@ export function ProjektSide({ projektId, fane = 'registrer' }: { projektId: stri
 
   return (
     <main className="side">
-      <Top titel={data.projekt.navn} tilbage="/projekter" tilbageTekst="Projekter">
+      <Top titel={data.projekt.navn} tilbage="/" tilbageTekst="AKBOG">
         <div className="ikoner">
           <button
             className="stjerne"
