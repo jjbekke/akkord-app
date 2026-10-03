@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { repo } from '../../data'
 import { kr, laesKroner, tal } from '../../domain/tal'
-import type { Medlem, Person } from '../../domain/typer'
+import type { Medlem } from '../../domain/typer'
 import { gaaTil, useBruger, useHandling, useHent } from '../faelles'
 import { Fejl } from '../komponenter'
 import type { FaneProps } from './ProjektSide'
@@ -77,7 +77,6 @@ export function Indstillinger({ data, laast, genindlaes }: FaneProps) {
               erOpretter={erOpretter}
               erOpretterSelv={m.brugerId === data.projekt.oprettetAf}
               harRegistreringer={data.timer.some((t) => t.medlemId === m.id) || data.justeringer.some((j) => j.medlemId === m.id)}
-              ledigePersoner={ledigePersoner}
               genindlaes={genindlaes}
             />
           ))}
@@ -195,20 +194,18 @@ function MedlemRaekke({
   erOpretter,
   erOpretterSelv,
   harRegistreringer,
-  ledigePersoner,
   genindlaes,
 }: {
   medlem: Medlem
   erOpretter: boolean
   erOpretterSelv: boolean
   harRegistreringer: boolean
-  ledigePersoner: Person[]
   genindlaes: () => void
 }) {
   const [aaben, setAaben] = useState(false)
   const [sats, setSats] = useState(tal(medlem.timesats))
   const [tillaeg, setTillaeg] = useState(medlem.overskudPrTime === undefined ? '' : tal(medlem.overskudPrTime))
-  const [kobl, setKobl] = useState('')
+  const [email, setEmail] = useState('')
   const { koer, fejl, setFejl, travl } = useHandling(genindlaes)
   const erLeder = medlem.rolle === 'projektleder'
 
@@ -220,7 +217,7 @@ function MedlemRaekke({
     if (await koer(() => repo.gemMedlem({ ...medlem, timesats, overskudPrTime: overskud }))) setAaben(false)
   }
 
-  const login = medlem.brugerId ? null : medlem.personId ? 'ingen konto endnu' : 'ikke koblet til en person'
+  const login = medlem.brugerId ? null : medlem.personId ? 'ingen konto endnu' : 'ingen login'
 
   return (
     <li className={aaben ? 'redigerer' : ''}>
@@ -267,28 +264,30 @@ function MedlemRaekke({
               </label>
             </div>
             {!medlem.personId && (
-              <div className="stak">
+              <form
+                className="stak"
+                onSubmit={async (e) => {
+                  e.preventDefault()
+                  if (await koer(() => repo.koblMedlemEmail(medlem.id, email))) setEmail('')
+                }}
+              >
                 <label>
-                  Kobl til person (giver login-adgang via e-mail)
-                  <select value={kobl} onChange={(e) => setKobl(e.target.value)}>
-                    <option value="">Vælg person fra dit kartotek…</option>
-                    {ledigePersoner.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.navn}
-                        {p.email ? ` (${p.email})` : ''}
-                      </option>
-                    ))}
-                  </select>
+                  E-mail til login
+                  <input
+                    type="email"
+                    inputMode="email"
+                    autoComplete="off"
+                    placeholder="navn@eksempel.dk"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
                 </label>
-                <button disabled={travl || !kobl} onClick={() => koer(() => repo.koblMedlem(medlem.id, kobl))}>
-                  Kobl
-                </button>
-                {ledigePersoner.length === 0 && (
-                  <p className="daempet lille">
-                    <a href="#/personer">Opret personen</a> med e-mail i dit kartotek først.
-                  </p>
-                )}
-              </div>
+                <p className="daempet lille">
+                  {medlem.navn} får adgang til projektet, når vedkommende logger ind med denne e-mail. Personen lægges også i
+                  dit kartotek under Personer.
+                </p>
+                <button disabled={travl || !email.trim()}>Kobl e-mail</button>
+              </form>
             )}
             <Fejl tekst={fejl} />
             <div className="knaprad">

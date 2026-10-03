@@ -72,8 +72,11 @@ export interface Repository {
 
   tilfoejMedlem(projektId: Id, person: Person, overskudPrTime?: number): Promise<void>
   gemMedlem(medlem: Medlem): Promise<void>
-  /** Kobl et medlem uden person (fx fra Viby-eksemplet) til en person i eget kartotek. */
-  koblMedlem(medlemId: Id, personId: Id): Promise<void>
+  /**
+   * Kobl et medlem uden person (fx fra Viby-eksemplet) til en e-mail. Personen findes
+   * eller oprettes i eget kartotek og får adgang, når der logges ind med e-mailen.
+   */
+  koblMedlemEmail(medlemId: Id, email: string): Promise<void>
   fjernMedlem(id: Id): Promise<void>
   tilfoejProjektMateriale(projektId: Id, materiale: Materiale): Promise<void>
   fjernProjektMateriale(id: Id): Promise<void>

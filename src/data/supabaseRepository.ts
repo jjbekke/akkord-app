@@ -197,9 +197,8 @@ export class SupabaseRepository implements Repository {
     if (r.length === 0) throw new Error('Ændringen blev ikke gemt — kun projektledere kan rette medlemmer')
   }
 
-  async koblMedlem(medlemId: Id, personId: Id) {
-    const r = tjek(await supabase.from('projekt_medlemmer').update({ person_id: personId }).eq('id', medlemId).select('id'))
-    if (r.length === 0) throw new Error('Medlemmet blev ikke koblet')
+  async koblMedlemEmail(medlemId: Id, email: string) {
+    tjek(await supabase.rpc('kobl_medlem_email', { p_medlem: medlemId, p_email: email }))
   }
 
   async fjernMedlem(id: Id) {

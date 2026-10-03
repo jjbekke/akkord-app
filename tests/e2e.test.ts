@@ -134,8 +134,24 @@ describe.skipIf(!KODE)('AKBOG mod Supabase', () => {
 
     // Medlemmet ser ikke projektet, før det kobles til personen med medlemmets e-mail
     expect(ok(await medlem.from('projekter').select('id').eq('id', projektId))).toHaveLength(0)
-    ok(await leder.from('projekt_medlemmer').update({ person_id: pMedlem.id }).eq('id', uden.id))
+    const ugyldig = await leder.rpc('kobl_medlem_email', { p_medlem: uden.id, p_email: 'ikke-en-mail' })
+    expect(ugyldig.error?.message).toMatch(/gyldig e-mail/)
+    ok(await leder.rpc('kobl_medlem_email', { p_medlem: uden.id, p_email: ' Medlem@akbog-test.dk ' }))
+    expect(ok(await leder.from('projekt_medlemmer').select('person_id').eq('id', uden.id).single()).person_id).toBe(pMedlem.id)
     expect(ok(await medlem.from('projekter').select('id').eq('id', projektId))).toHaveLength(1)
+
+    // Ny e-mail uden konto: personen oprettes i kartoteket med medlemmets navn og sats
+    const ny = ok(
+      await leder.from('projekt_medlemmer').insert({ projekt_id: projektId, navn: 'Ny via mail', timesats: 9500 }).select('id').single(),
+    )
+    ok(await leder.rpc('kobl_medlem_email', { p_medlem: ny.id, p_email: 'ny-person@akbog-test.dk' }))
+    const nyPerson = ok(await leder.from('personer').select('*').eq('email', 'ny-person@akbog-test.dk').single())
+    expect(nyPerson).toMatchObject({ navn: 'Ny via mail', timesats: 9500, bruger_id: null })
+    const dobbelt = ok(
+      await leder.from('projekt_medlemmer').insert({ projekt_id: projektId, navn: 'Dobbelt', timesats: 9000 }).select('id').single(),
+    )
+    const dobbeltSvar = await leder.rpc('kobl_medlem_email', { p_medlem: dobbelt.id, p_email: 'medlem@akbog-test.dk' })
+    expect(dobbeltSvar.error?.message).toMatch(/allerede med i projektet/)
     const mig = ok(await leder.from('personer').select('id').eq('bruger_id', LEDER_ID).single())
     const igen = await leder.from('projekt_medlemmer').update({ person_id: mig.id }).eq('id', uden.id)
     expect(igen.error?.message).toMatch(/allerede koblet/) // en kobling kan ikke laves om
