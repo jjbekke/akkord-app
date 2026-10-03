@@ -424,43 +424,6 @@ a.knap {
   text-decoration: none;
 }
 
-/* --- Chips (hurtigvalg) ---------------------------------------------------- */
-
-.chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.chip {
-  position: relative;
-  display: inline-flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  min-height: 44px;
-  padding: 8px 16px;
-  border: 1.5px solid var(--kant);
-  border-radius: 999px;
-  background: #fff;
-  color: var(--tekst);
-  font-size: 1rem;
-  font-weight: 600;
-}
-
-.chip[aria-pressed='true'],
-.chip.valgt {
-  background: var(--tekst);
-  border-color: var(--tekst);
-  color: #fff;
-}
-
-.chip.tal-chip {
-  min-width: 60px;
-  font-variant-numeric: tabular-nums;
-}
-
 .dagvaelger {
   display: flex;
   align-items: center;
@@ -489,8 +452,7 @@ label.kalenderknap {
   cursor: pointer;
 }
 
-label.kalenderknap input,
-.chip.dato input {
+label.kalenderknap input {
   position: absolute;
   inset: 0;
   opacity: 0;

@@ -18,8 +18,6 @@ interface Linje {
 }
 
 const TIMETYPER = Object.keys(TIMETYPE_NAVN) as TimeType[]
-/** De timetal man oftest skriver — ét tryk i stedet for tastatur. */
-const HURTIGE_TIMER = ['4', '7,5', '8', '9']
 
 let naesteNoegle = 1
 const nyLinje = (type: LinjeType = 'akkord', materialeId = ''): Linje => ({
@@ -68,7 +66,7 @@ export function RegistrerFane({ data, mig, erLeder, laast, genindlaes }: FanePro
     e.preventDefault()
     setGemt('')
     const udfyldte = linjer.filter((l) => l.vaerdi.trim() !== '')
-    if (udfyldte.length === 0 && !note.trim()) return setFejl('Skriv antal timer — eller tryk på et af tallene')
+    if (udfyldte.length === 0 && !note.trim()) return setFejl('Skriv antal timer')
     if (!dato) return setFejl('Vælg en dato')
 
     const ud: RegistreringsLinje[] = []
@@ -180,7 +178,7 @@ export function RegistrerFane({ data, mig, erLeder, laast, genindlaes }: FanePro
                 )}
               </div>
 
-              {l.type === 'materiale' ? (
+              {l.type === 'materiale' && (
                 <select aria-label="Materiale" value={l.materialeId} onChange={(e) => ret(l.noegle, { materialeId: e.target.value })}>
                   {data.materialer.map((m) => (
                     <option key={m.id} value={m.id}>
@@ -188,14 +186,6 @@ export function RegistrerFane({ data, mig, erLeder, laast, genindlaes }: FanePro
                     </option>
                   ))}
                 </select>
-              ) : (
-                <div className="chips" role="group" aria-label="Hurtige timetal">
-                  {HURTIGE_TIMER.map((t) => (
-                    <button type="button" key={t} className="chip tal-chip" aria-pressed={l.vaerdi === t} onClick={() => ret(l.noegle, { vaerdi: t })}>
-                      {t}
-                    </button>
-                  ))}
-                </div>
               )}
 
               {l.type === 'timeloen' && (
