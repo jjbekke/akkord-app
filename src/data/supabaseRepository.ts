@@ -1,7 +1,7 @@
 import { FunctionsHttpError } from '@supabase/supabase-js'
 import type { Id, Materiale, MaterialeRegistrering, Medlem, Person, TimeRegistrering } from '../domain/typer'
 import { hentProjektData, tilMateriale, tilPerson, tilProjekt, type Db } from './raekker'
-import type { MitRegnskab, NytProjekt, ProjektOversigt, Repository } from './repository'
+import type { Kollega, MitRegnskab, NytProjekt, ProjektMaterialeOversigt, ProjektOversigt, Repository } from './repository'
 import { supabase } from './supabase'
 
 interface DbFejl {
@@ -53,6 +53,22 @@ export class SupabaseRepository implements Repository {
     return tjek(await supabase.from('personer').select('*').order('navn')).map(tilPerson)
   }
 
+  async hentKolleger(): Promise<Kollega[]> {
+    return tjek(await supabase.rpc('projektkolleger')).map((r: Record<string, unknown>) => ({
+      medlemId: r.medlem_id as Id,
+      projektId: r.projekt_id as Id,
+      projektNavn: r.projekt_navn as string,
+      projektAfsluttet: r.projekt_afsluttet as boolean,
+      navn: r.navn as string,
+      rolle: r.rolle as Medlem['rolle'],
+      noegle: r.noegle as Id,
+      personId: (r.person_id as Id | null) ?? undefined,
+      timesats: (r.timesats as number | null) ?? undefined,
+      harLogin: r.har_login as boolean,
+      erMig: r.er_mig === true,
+    }))
+  }
+
   async gemPerson(p: Omit<Person, 'id'> & { id?: Id }) {
     const raekke = { navn: p.navn, email: p.email ?? null, timesats: p.timesats }
     if (p.id) tjek(await supabase.from('personer').update(raekke).eq('id', p.id))
@@ -67,6 +83,20 @@ export class SupabaseRepository implements Repository {
 
   async hentMaterialer() {
     return tjek(await supabase.from('materialer').select('*').order('navn')).map(tilMateriale)
+  }
+
+  async hentProjektMaterialer(): Promise<ProjektMaterialeOversigt[]> {
+    const raekker = tjek(
+      await supabase.from('projekt_materialer').select('id, projekt_id, materiale_id, navn, stykpris, projekter(navn)').order('navn'),
+    )
+    return raekker.map((r) => ({
+      id: r.id as Id,
+      projektId: r.projekt_id as Id,
+      projektNavn: ((r.projekter as unknown as { navn: string } | null)?.navn ?? '') as string,
+      materialeId: (r.materiale_id as Id | null) ?? undefined,
+      navn: r.navn as string,
+      stykpris: r.stykpris as number,
+    }))
   }
 
   async opretMateriale(navn: string, stykpris: number) {

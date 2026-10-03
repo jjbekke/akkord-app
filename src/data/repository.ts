@@ -30,6 +30,34 @@ export interface NytProjekt {
   materialeIder: Id[]
 }
 
+/** Én person i ét fælles projekt — fra funktionen projektkolleger(). */
+export interface Kollega {
+  medlemId: Id
+  projektId: Id
+  projektNavn: string
+  projektAfsluttet: boolean
+  navn: string
+  rolle: Medlem['rolle']
+  /** Samme person på tværs af projekter (login-id, ellers medlems-id) */
+  noegle: Id
+  /** Sat hvis personen ligger i ens eget kartotek */
+  personId?: Id
+  /** Kun i projekter hvor man selv er projektleder */
+  timesats?: number
+  harLogin: boolean
+  erMig: boolean
+}
+
+/** Et materiale i et projekt, hvor man er projektleder. */
+export interface ProjektMaterialeOversigt {
+  id: Id
+  projektId: Id
+  projektNavn: string
+  materialeId?: Id
+  navn: string
+  stykpris: number
+}
+
 /** Svar fra edge-funktionen "mit-regnskab": kun den indloggede persons egne tal. */
 export interface MitRegnskab {
   loen: LoenPerson | null
@@ -51,10 +79,14 @@ export interface Repository {
   hentProfil(): Promise<Profil>
 
   hentPersoner(): Promise<Person[]>
+  /** Alle man deler projekt med (også tilføjet af andre). */
+  hentKolleger(): Promise<Kollega[]>
   gemPerson(person: Ny<Person> & { id?: Id }): Promise<void>
   sletPerson(id: Id): Promise<void>
 
   hentMaterialer(): Promise<Materiale[]>
+  /** Materialerne i de projekter, hvor man er projektleder. */
+  hentProjektMaterialer(): Promise<ProjektMaterialeOversigt[]>
   opretMateriale(navn: string, stykpris: number): Promise<void>
   skjulMateriale(id: Id, skjult: boolean): Promise<void>
   sletMateriale(id: Id): Promise<void>

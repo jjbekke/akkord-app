@@ -1,59 +1,107 @@
 import { useState } from 'react'
 import { repo } from '../../data'
+import type { Kollega } from '../../data/repository'
 import { kr, laesKroner, tal } from '../../domain/tal'
 import type { Person } from '../../domain/typer'
 import { useBruger, useHandling, useHent } from '../faelles'
 import { Fejl, Henter, Top } from '../komponenter'
 
-/** Værktøjskasse → Personer: ens eget kartotek med navn, e-mail og timesats. */
+/**
+ * Værktøjskasse → Personer: alle man deler projekt med. Personer man selv har
+ * oprettet, men som ikke er på et projekt endnu, ses kun af en selv.
+ */
 export function Personer() {
   const bruger = useBruger()
-  const { data: personer, fejl, genindlaes } = useHent(() => repo.hentPersoner(), [])
+  const { data, fejl, genindlaes } = useHent(() => Promise.all([repo.hentKolleger(), repo.hentPersoner()]), [])
   const [redigerer, setRedigerer] = useState<string | null>(null)
+
+  if (!data)
+    return (
+      <main className="side">
+        <Top titel="Personer" tilbage="/" tilbageTekst="AKBOG" />
+        <Henter fejl={fejl} />
+      </main>
+    )
+
+  const [kolleger, kartotek] = data
+  const mig = kartotek.find((p) => p.brugerId === bruger.id)
+
+  // Samme person på tværs af projekter samles til én række
+  const grupper = new Map<string, { navn: string; harLogin: boolean; personId?: string; timesats?: number; projekter: Kollega[] }>()
+  for (const k of kolleger.filter((k) => !k.erMig)) {
+    const g = grupper.get(k.noegle) ?? { navn: k.navn, harLogin: k.harLogin, projekter: [] }
+    g.personId ??= k.personId
+    g.timesats ??= k.timesats
+    g.projekter.push(k)
+    grupper.set(k.noegle, g)
+  }
+  const paaProjekt = new Set(kolleger.map((k) => k.personId).filter(Boolean))
+  const ikkePaaProjekt = kartotek.filter((p) => p.brugerId !== bruger.id && !paaProjekt.has(p.id))
+
+  const faerdig = () => {
+    setRedigerer(null)
+    genindlaes()
+  }
+
+  const kartotekRaekke = (p: Person, ekstra?: React.ReactNode) =>
+    redigerer === p.id ? (
+      <li key={p.id}>
+        <PersonFormular person={p} erMig={p.brugerId === bruger.id} faerdig={faerdig} />
+      </li>
+    ) : (
+      <li key={p.id}>
+        <div>
+          <strong>{p.navn}</strong>
+          <div className="daempet lille">{ekstra ?? p.email ?? 'Ingen e-mail'}</div>
+        </div>
+        <span className="tal">{kr(p.timesats)}/t</span>
+        <button className="lille-knap" onClick={() => setRedigerer(p.id)}>
+          Ret
+        </button>
+      </li>
+    )
 
   return (
     <main className="side">
       <Top titel="Personer" tilbage="/" tilbageTekst="AKBOG" />
       <p className="daempet lille">
-        Personer tilføjes med e-mail. Når personen opretter en konto med samme e-mail, kan vedkommende selv logge ind og se
-        sine projekter. Lærlingetillæg sættes, når personen tilføjes til et projekt.
+        Her ser du alle, du er på projekt med. Nye personer, du opretter, kan kun du se, indtil de kommer med på et projekt.
       </p>
 
-      {!personer ? (
-        <Henter fejl={fejl} />
-      ) : (
+      {mig && (
         <section className="kort">
-          <ul className="liste">
-            {personer.map((p) =>
-              redigerer === p.id ? (
-                <li key={p.id}>
-                  <PersonFormular
-                    person={p}
-                    erMig={p.brugerId === bruger.id}
-                    faerdig={() => {
-                      setRedigerer(null)
-                      genindlaes()
-                    }}
-                  />
-                </li>
-              ) : (
-                <li key={p.id}>
-                  <div>
-                    <strong>{p.navn}</strong>
-                    {p.brugerId === bruger.id && <span className="daempet"> (dig)</span>}
-                    <div className="daempet lille">
-                      {p.email ?? 'Ingen e-mail'}
-                      {p.email && p.brugerId !== bruger.id && (p.brugerId ? ' · har konto' : ' · ingen konto endnu')}
-                    </div>
-                  </div>
-                  <span className="tal">{kr(p.timesats)}/t</span>
-                  <button className="lille-knap" onClick={() => setRedigerer(p.id)}>
-                    Ret
-                  </button>
-                </li>
-              ),
-            )}
-          </ul>
+          <h3>Dig</h3>
+          <ul className="liste">{kartotekRaekke(mig, 'Din timesats bruges, når du opretter et projekt')}</ul>
+        </section>
+      )}
+
+      <section className="kort">
+        <h3>På projekt med dig</h3>
+        {grupper.size === 0 && <p className="daempet lille">Ingen endnu — personer kommer på, når de tilføjes til et projekt.</p>}
+        <ul className="liste">
+          {[...grupper.entries()].map(([noegle, g]) => {
+            const person = g.personId ? kartotek.find((p) => p.id === g.personId) : undefined
+            const projekter = g.projekter.map((k) => k.projektNavn + (k.rolle === 'projektleder' ? ' (projektleder)' : '')).join(' · ')
+            if (person) return kartotekRaekke(person, projekter)
+            return (
+              <li key={noegle}>
+                <div>
+                  <strong>{g.navn}</strong>
+                  {!g.harLogin && <span className="daempet lille"> · ingen login</span>}
+                  <div className="daempet lille">{projekter}</div>
+                </div>
+                {g.timesats !== undefined && <span className="tal">{kr(g.timesats)}/t</span>}
+              </li>
+            )
+          })}
+        </ul>
+      </section>
+
+      {ikkePaaProjekt.length > 0 && (
+        <section className="kort">
+          <h3>Ikke på et projekt endnu</h3>
+          <p className="daempet lille">Kun synlige for dig.</p>
+          <ul className="liste">{ikkePaaProjekt.map((p) => kartotekRaekke(p))}</ul>
         </section>
       )}
 

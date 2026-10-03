@@ -88,6 +88,17 @@ describe.skipIf(!KODE)('AKBOG mod Supabase', () => {
     expect(forAndre.error?.code).toBe('42501')
     ok(await medlem.from('timer').insert({ projekt_id: projektId, medlem_id: ham.id, dato: '2026-10-02', type: 'akkord', timer: 500 }))
 
+    // Personer: medlemmet ser sine kolleger, men ikke deres timesatser — projektlederen ser dem
+    const kollegerM = ok(await medlem.rpc('projektkolleger')).filter((k: { projekt_id: string }) => k.projekt_id === projektId)
+    expect(kollegerM).toHaveLength(2)
+    expect(kollegerM.find((k: { er_mig: boolean }) => !k.er_mig)).toMatchObject({ navn: mig.navn, rolle: 'projektleder', timesats: null, person_id: null })
+    expect(kollegerM.find((k: { er_mig: boolean }) => k.er_mig)).toMatchObject({ timesats: null })
+    const kollegerL = ok(await leder.rpc('projektkolleger')).filter((k: { projekt_id: string }) => k.projekt_id === projektId)
+    expect(kollegerL.find((k: { medlem_id: string }) => k.medlem_id === ham.id)).toMatchObject({ timesats: 10850, person_id: pMedlem.id, har_login: true })
+
+    // Materialer: kun projektledere ser projektets priser
+    expect(ok(await leder.from('projekt_materialer').select('id, projekter(navn)').eq('projekt_id', projektId))).toHaveLength(2)
+
     // Edge function: medlemmets egen løn = samme tal som lederens fulde beregning
     const fuld = beregnLoen(await hentProjektData(db(leder), projektId))
     const svar = await medlem.functions.invoke('mit-regnskab', { body: { projektId } })
