@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { repo } from '../../data'
 import type { Kollega } from '../../data/repository'
-import { kr, laesKroner, tal } from '../../domain/tal'
+import { kr } from '../../domain/tal'
 import type { Person } from '../../domain/typer'
 import { useBruger, useHandling, useHent } from '../faelles'
 import { Fejl, Henter, Top } from '../komponenter'
+import { SatsFelter } from '../SatsFelter'
+import { afvigendeSatser, laesSatser, satserEns, satsTekst } from '../satser'
 
 /**
  * Værktøjskasse → Personer: alle man deler projekt med. Personer man selv har
@@ -30,12 +32,14 @@ export function Personer() {
   const grupper = new Map<string, { navn: string; harLogin: boolean; personId?: string; timesats?: number; projekter: Kollega[] }>()
   for (const k of kolleger.filter((k) => !k.erMig)) {
     const g = grupper.get(k.noegle) ?? { navn: k.navn, harLogin: k.harLogin, projekter: [] }
-    g.personId ??= k.personId
+    // Personen i eget kartotek — via koblingen, ellers via samme login
+    g.personId ??= k.personId ?? (k.harLogin ? kartotek.find((p) => p.brugerId === k.noegle)?.id : undefined)
     g.timesats ??= k.timesats
     g.projekter.push(k)
     grupper.set(k.noegle, g)
   }
-  const paaProjekt = new Set(kolleger.map((k) => k.personId).filter(Boolean))
+  const paaProjekt = new Set([...grupper.values()].map((g) => g.personId).filter(Boolean))
+  if (mig && kolleger.some((k) => k.erMig)) paaProjekt.add(mig.id)
   const ikkePaaProjekt = kartotek.filter((p) => p.brugerId !== bruger.id && !paaProjekt.has(p.id))
 
   const faerdig = () => {
@@ -46,7 +50,7 @@ export function Personer() {
   const kartotekRaekke = (p: Person, ekstra?: React.ReactNode) =>
     redigerer === p.id ? (
       <li key={p.id}>
-        <PersonFormular person={p} erMig={p.brugerId === bruger.id} faerdig={faerdig} />
+        <PersonFormular person={p} erMig={p.brugerId === bruger.id} paaProjekter={paaProjekt.has(p.id)} faerdig={faerdig} />
       </li>
     ) : (
       <li key={p.id}>
@@ -54,7 +58,10 @@ export function Personer() {
           <strong>{p.navn}</strong>
           <div className="daempet lille">{ekstra ?? p.email ?? 'Ingen e-mail'}</div>
         </div>
-        <span className="tal">{kr(p.timesats)}/t</span>
+        <span className="tal satskolonne">
+          {kr(p.timesats)}/t
+          {afvigendeSatser(p) && <small className="daempet">{afvigendeSatser(p)}</small>}
+        </span>
         <button className="lille-knap" onClick={() => setRedigerer(p.id)}>
           Ret
         </button>
@@ -113,29 +120,53 @@ export function Personer() {
   )
 }
 
-function PersonFormular({ person, erMig, faerdig }: { person?: Person; erMig?: boolean; faerdig: () => void }) {
+function PersonFormular({
+  person,
+  erMig,
+  paaProjekter,
+  faerdig,
+}: {
+  person?: Person
+  erMig?: boolean
+  /** Personen er med i projekter — så kan satserne kopieres derud */
+  paaProjekter?: boolean
+  faerdig: () => void
+}) {
   const [navn, setNavn] = useState(person?.navn ?? '')
   const [email, setEmail] = useState(person?.email ?? '')
-  const [sats, setSats] = useState(person ? tal(person.timesats) : '')
+  const [satser, setSatser] = useState(satsTekst(person))
+  const [besked, setBesked] = useState('')
   const { koer, fejl, setFejl, travl } = useHandling()
 
   const gem = async (e: React.FormEvent) => {
     e.preventDefault()
-    const timesats = laesKroner(sats)
+    setBesked('')
     if (!navn.trim()) return setFejl('Skriv et navn')
     if (email.trim() && !email.includes('@')) return setFejl('Ugyldig e-mail')
-    if (timesats === null || timesats < 0) return setFejl('Skriv en timesats, fx 210,00')
-    const ok = await koer(() =>
-      repo.gemPerson({ id: person?.id, navn: navn.trim(), email: email.trim() || undefined, timesats }),
-    )
-    if (ok) {
-      if (!person) {
-        setNavn('')
-        setEmail('')
-        setSats('')
+    const s = laesSatser(satser)
+    if (typeof s === 'string') return setFejl(s)
+    const ny = { id: person?.id, navn: navn.trim(), email: email.trim() || undefined, ...s }
+    const ok = await koer(() => repo.gemPerson(ny))
+    if (!ok) return
+
+    // Satserne er standard i projekterne — tilbyd at opdatere de aktive projekter
+    if (person && paaProjekter && !satserEns(person, s)) {
+      const svar = confirm(
+        `Satserne for ${ny.navn} er ændret.\n\nOpdater også satserne i dine aktive projekter? Afsluttede projekter ændres ikke.`,
+      )
+      if (svar) {
+        let antal = 0
+        if (!(await koer(async () => (antal = await repo.opdaterSatserIProjekter({ ...person, ...ny, id: person.id }))))) return
+        alert(antal === 1 ? 'Satserne er opdateret i 1 projekt.' : `Satserne er opdateret i ${antal} projekter.`)
       }
-      faerdig()
     }
+    if (!person) {
+      setNavn('')
+      setEmail('')
+      setSatser(satsTekst())
+      setBesked(`${ny.navn} er tilføjet.`)
+    }
+    faerdig()
   }
 
   const slet = async () => {
@@ -149,17 +180,13 @@ function PersonFormular({ person, erMig, faerdig }: { person?: Person; erMig?: b
         Navn
         <input value={navn} onChange={(e) => setNavn(e.target.value)} />
       </label>
-      <div className="raekke">
-        <label>
-          E-mail {erMig ? '' : '(valgfri)'}
-          <input type="email" inputMode="email" value={email} disabled={erMig} onChange={(e) => setEmail(e.target.value)} />
-        </label>
-        <label className="smal">
-          Timesats (kr.)
-          <input inputMode="decimal" placeholder="210,00" value={sats} onChange={(e) => setSats(e.target.value)} />
-        </label>
-      </div>
+      <label>
+        E-mail {erMig ? '' : '(valgfri — giver login-adgang)'}
+        <input type="email" inputMode="email" value={email} disabled={erMig} onChange={(e) => setEmail(e.target.value)} />
+      </label>
+      <SatsFelter vaerdi={satser} aendr={setSatser} />
       <Fejl tekst={fejl} />
+      {besked && <p className="besked">{besked}</p>}
       <div className="knaprad">
         <button className="primaer" disabled={travl}>
           {person ? 'Gem' : 'Tilføj person'}

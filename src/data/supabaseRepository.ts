@@ -1,5 +1,5 @@
 import { FunctionsHttpError } from '@supabase/supabase-js'
-import type { Id, Materiale, MaterialeRegistrering, Medlem, Person, TimeRegistrering } from '../domain/typer'
+import type { Id, Materiale, MaterialeRegistrering, Medlem, Person, Satser, TimeRegistrering } from '../domain/typer'
 import { hentProjektData, tilMateriale, tilPerson, tilProjekt, type Db } from './raekker'
 import type { Kollega, MitRegnskab, NytProjekt, ProjektMaterialeOversigt, ProjektOversigt, Repository } from './repository'
 import { supabase } from './supabase'
@@ -40,6 +40,14 @@ async function brugerId(): Promise<Id> {
 
 const db = supabase as unknown as Db
 
+/** Satserne som databasekolonner — tom sats = samme som timesatsen. */
+const satsRaekke = (s: Satser) => ({
+  timesats: s.timesats,
+  akkordsats: s.akkordsats ?? null,
+  sygsats: s.sygsats ?? null,
+  vejrligsats: s.vejrligsats ?? null,
+})
+
 export class SupabaseRepository implements Repository {
   async hentProfil() {
     const id = await brugerId()
@@ -70,9 +78,16 @@ export class SupabaseRepository implements Repository {
   }
 
   async gemPerson(p: Omit<Person, 'id'> & { id?: Id }) {
-    const raekke = { navn: p.navn, email: p.email ?? null, timesats: p.timesats }
+    const raekke = { navn: p.navn, email: p.email ?? null, ...satsRaekke(p) }
     if (p.id) tjek(await supabase.from('personer').update(raekke).eq('id', p.id))
     else tjek(await supabase.from('personer').insert(raekke))
+  }
+
+  async opdaterSatserIProjekter(p: Person) {
+    // Personen kan være med via koblingen eller via sit login
+    const hvem = p.brugerId ? `person_id.eq.${p.id},bruger_id.eq.${p.brugerId}` : `person_id.eq.${p.id}`
+    const r = tjek(await supabase.from('projekt_medlemmer').update(satsRaekke(p)).or(hvem).select('id'))
+    return r.length
   }
 
   async sletPerson(id: Id) {
@@ -210,7 +225,7 @@ export class SupabaseRepository implements Repository {
         projekt_id: projektId,
         person_id: person.id,
         navn: person.navn,
-        timesats: person.timesats,
+        ...satsRaekke(person),
         overskud_pr_time: overskudPrTime ?? null,
       }),
     )
@@ -220,7 +235,7 @@ export class SupabaseRepository implements Repository {
     const r = tjek(
       await supabase
         .from('projekt_medlemmer')
-        .update({ navn: m.navn, rolle: m.rolle, timesats: m.timesats, overskud_pr_time: m.overskudPrTime ?? null })
+        .update({ navn: m.navn, rolle: m.rolle, ...satsRaekke(m), overskud_pr_time: m.overskudPrTime ?? null })
         .eq('id', m.id)
         .select('id'),
     )

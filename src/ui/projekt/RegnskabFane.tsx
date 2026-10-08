@@ -27,8 +27,8 @@ function FuldtRegnskab({ data, laast, genindlaes }: FaneProps) {
             <strong className="tal">{kr(r.akkord.akkordsum)}</strong>
           </span>
           <span>
-            <small>Kr. pr. akkordtime</small>
-            <strong className="tal">{kr(r.akkord.krPrAkkordtime)}</strong>
+            <small>Gns. kr. pr. akkordtime pr. person</small>
+            <strong className="tal">{kr(r.akkord.gnsKrPrAkkordtimePrPerson)}</strong>
           </span>
         </div>
       </section>
@@ -36,6 +36,7 @@ function FuldtRegnskab({ data, laast, genindlaes }: FaneProps) {
       <details className="kort fold">
         <summary>Fordeling af det samlede beløb</summary>
         <Tal label="Akkordsum (materialer)" vaerdi={r.akkord.akkordsum} />
+        <Tal label="Kr. pr. akkordtime i alt (akkordsum ÷ timer)" vaerdi={r.akkord.krPrAkkordtime} />
         <Tal label={`Akkordløn (${timer(r.akkord.akkordtimer)} t)`} vaerdi={r.total.akkordloen} />
         <Tal label="Overskud" vaerdi={r.total.overskud} />
         <Tal label="Timeløn" vaerdi={r.total.timeloen} />

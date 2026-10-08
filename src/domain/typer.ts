@@ -11,12 +11,19 @@ export interface Profil {
   email: string
 }
 
+/** Satserne for én person. Tomme satser er lig timesatsen. */
+export type Satser = Pick<Medlem, 'timesats' | 'akkordsats' | 'sygsats' | 'vejrligsats'>
+
 /** En person i ens eget kartotek (Værktøjskasse → Personer). */
 export interface Person {
   id: Id
   navn: string
   email?: string
   timesats: Oere
+  /** Tom = samme som timesatsen */
+  akkordsats?: Oere
+  sygsats?: Oere
+  vejrligsats?: Oere
   /** Sat når personen har en bekræftet konto med samme e-mail */
   brugerId?: Id
 }
@@ -47,7 +54,13 @@ export interface Medlem {
   brugerId?: Id
   navn: string
   rolle: Rolle
-  timesats: Oere // øre pr. time — bruges til akkordløn, timeløn, syg og vejrlig
+  timesats: Oere // øre pr. time — timeløn, og standard for de andre satser
+  /** Akkordløn pr. akkordtime. Tom = timesatsen */
+  akkordsats?: Oere
+  /** Tom = timesatsen */
+  sygsats?: Oere
+  /** Tom = timesatsen */
+  vejrligsats?: Oere
   /** Fast overskud pr. akkordtime (lærling). Tom = andel af resten efter akkordtimer. */
   overskudPrTime?: Oere
 }

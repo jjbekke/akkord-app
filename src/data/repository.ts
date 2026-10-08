@@ -82,6 +82,11 @@ export interface Repository {
   /** Alle man deler projekt med (også tilføjet af andre). */
   hentKolleger(): Promise<Kollega[]>
   gemPerson(person: Ny<Person> & { id?: Id }): Promise<void>
+  /**
+   * Kopiér personens satser til personen i de aktive projekter, hvor man er projektleder.
+   * Afsluttede projekter ændres aldrig. Returnerer antal opdaterede projekter.
+   */
+  opdaterSatserIProjekter(person: Person): Promise<number>
   sletPerson(id: Id): Promise<void>
 
   hentMaterialer(): Promise<Materiale[]>

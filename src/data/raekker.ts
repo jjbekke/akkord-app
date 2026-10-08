@@ -25,6 +25,9 @@ export const tilPerson = (r: R): Person => ({
   navn: s(r.navn),
   email: valgfri(r.email),
   timesats: r.timesats as number,
+  akkordsats: valgfri(r.akkordsats),
+  sygsats: valgfri(r.sygsats),
+  vejrligsats: valgfri(r.vejrligsats),
   brugerId: valgfri(r.bruger_id),
 })
 
@@ -51,6 +54,9 @@ export const tilMedlem = (r: R): Medlem => ({
   navn: s(r.navn),
   rolle: r.rolle as Medlem['rolle'],
   timesats: r.timesats as number,
+  akkordsats: valgfri(r.akkordsats),
+  sygsats: valgfri(r.sygsats),
+  vejrligsats: valgfri(r.vejrligsats),
   overskudPrTime: valgfri(r.overskud_pr_time),
 })
 

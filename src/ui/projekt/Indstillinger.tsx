@@ -4,6 +4,8 @@ import { kr, laesKroner, tal } from '../../domain/tal'
 import type { Medlem } from '../../domain/typer'
 import { gaaTil, useBruger, useHandling, useHent } from '../faelles'
 import { Fejl } from '../komponenter'
+import { SatsFelter } from '../SatsFelter'
+import { afvigendeSatser, laesSatser, satsTekst } from '../satser'
 import type { FaneProps } from './ProjektSide'
 
 /** Projektindstillinger (kun projektledere): navn, medlemmer, roller og materialer. */
@@ -203,18 +205,18 @@ function MedlemRaekke({
   genindlaes: () => void
 }) {
   const [aaben, setAaben] = useState(false)
-  const [sats, setSats] = useState(tal(medlem.timesats))
+  const [satser, setSatser] = useState(satsTekst(medlem))
   const [tillaeg, setTillaeg] = useState(medlem.overskudPrTime === undefined ? '' : tal(medlem.overskudPrTime))
   const [email, setEmail] = useState('')
   const { koer, fejl, setFejl, travl } = useHandling(genindlaes)
   const erLeder = medlem.rolle === 'projektleder'
 
   const gem = async () => {
-    const timesats = laesKroner(sats)
+    const s = laesSatser(satser)
     const overskud = tillaeg.trim() === '' ? undefined : laesKroner(tillaeg)
-    if (timesats === null || timesats < 0) return setFejl('Ugyldig timesats')
+    if (typeof s === 'string') return setFejl(s)
     if (overskud === null || (overskud !== undefined && overskud < 0)) return setFejl('Ugyldigt lærlingetillæg')
-    if (await koer(() => repo.gemMedlem({ ...medlem, timesats, overskudPrTime: overskud }))) setAaben(false)
+    if (await koer(() => repo.gemMedlem({ ...medlem, ...s, overskudPrTime: overskud }))) setAaben(false)
   }
 
   const login = medlem.brugerId ? null : medlem.personId ? 'ingen konto endnu' : 'ingen login'
@@ -228,6 +230,7 @@ function MedlemRaekke({
             {erLeder && <span className="maerke">Projektleder</span>}
             <div className="daempet lille">
               {kr(medlem.timesats)}/t
+              {afvigendeSatser(medlem) && ` · ${afvigendeSatser(medlem)}`}
               {medlem.overskudPrTime !== undefined && ` · lærlingetillæg ${kr(medlem.overskudPrTime)}/t`}
               {login && ` · ${login}`}
             </div>
@@ -253,16 +256,11 @@ function MedlemRaekke({
 
         {aaben && (
           <>
-            <div className="raekke">
-              <label>
-                Timesats (kr.)
-                <input inputMode="decimal" value={sats} onChange={(e) => setSats(e.target.value)} />
-              </label>
-              <label>
-                Lærlingetillæg kr./t
-                <input inputMode="decimal" placeholder="Ingen" value={tillaeg} onChange={(e) => setTillaeg(e.target.value)} />
-              </label>
-            </div>
+            <SatsFelter vaerdi={satser} aendr={setSatser} />
+            <label>
+              Lærlingetillæg kr. pr. akkordtime
+              <input inputMode="decimal" placeholder="Ingen" value={tillaeg} onChange={(e) => setTillaeg(e.target.value)} />
+            </label>
             {!medlem.personId && (
               <form
                 className="stak"

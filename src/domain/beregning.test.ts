@@ -30,6 +30,10 @@ describe('Viby-regnskabet (facit fra notesblokken)', () => {
     expect(r.akkord.krPrAkkordtime).toBe(31820)
   })
 
+  it('gns. kr./akkordtime pr. person er gennemsnittet af 430,79 og 158,50', () => {
+    expect(r.akkord.gnsKrPrAkkordtimePrPerson).toBe(29465) // (43079 + 15850) / 2 = 29464,5 → 294,65
+  })
+
   it('timeløn', () => {
     expect(person(r.timeloen.personer, 'asbjoern')).toMatchObject({ timeloen: 997500, syg: 168000, vejrlig: 21000, iAlt: 1186500 })
     expect(person(r.timeloen.personer, 'jeppe')).toMatchObject({ timeloen: 298375, syg: 0, vejrlig: 10850, iAlt: 309225 })
@@ -53,6 +57,31 @@ describe('Viby-regnskabet (facit fra notesblokken)', () => {
     })
     const o = person(beregnLoen(data).personer, 'oliver')
     expect(o).toMatchObject({ beregnet: 71520, justeringer: 10000, iAlt: 81520 })
+  })
+})
+
+describe('satser', () => {
+  it('tomme satser er lig timesatsen — Viby er uændret', () => {
+    const data = vibyEksempel()
+    data.medlemmer = data.medlemmer.map((m) => ({ ...m, akkordsats: m.timesats, sygsats: m.timesats, vejrligsats: m.timesats }))
+    expect(beregnLoen(data).total.iAlt).toBe(8538925)
+  })
+
+  it('akkordsatsen bruges til akkordløn, og overskuddet falder tilsvarende', () => {
+    const data = vibyEksempel()
+    data.medlemmer[0] = { ...data.medlemmer[0], akkordsats: 22000 } // Asbjørn: 220 i stedet for 210 kr./t
+    const a = beregnLoen(data).akkord
+    const asbjoern = person(a.personer, 'asbjoern')
+    expect(asbjoern.akkordloen).toBe(2827000) // 128,5 t × 220 kr.
+    expect(a.akkordsum).toBe(6971680) // materialerne ændres ikke
+    expect(a.overskud).toBe(6971680 - 2827000 - 983010)
+  })
+
+  it('syge- og vejrligsats bruges til syg og vejrlig', () => {
+    const data = vibyEksempel()
+    data.medlemmer[0] = { ...data.medlemmer[0], sygsats: 15000, vejrligsats: 18000 }
+    const t = person(beregnLoen(data).timeloen.personer, 'asbjoern')
+    expect(t).toMatchObject({ syg: 120000, vejrlig: 18000, timeloen: 997500 }) // 8 t × 150, 1 t × 180, timeløn uændret
   })
 })
 

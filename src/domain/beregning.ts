@@ -28,7 +28,10 @@ export interface AkkordRegnskab {
   akkordtimer: Centi
   akkordloen: Oere
   overskud: Oere
+  /** Akkordsum ÷ alle akkordtimer */
   krPrAkkordtime: Oere
+  /** Gennemsnit af hver persons kr. pr. akkordtime */
+  gnsKrPrAkkordtimePrPerson: Oere
 }
 
 export interface TimeloenPerson {
@@ -96,7 +99,7 @@ export function beregnAkkord(data: ProjektData, advarsler: string[] = []): Akkor
     .map((m) => ({ m, akkordtimer: sumTimer(data, m.id, 'akkord') }))
     .filter((d) => d.akkordtimer > 0)
 
-  const akkordloen = deltagere.map((d) => gange(d.akkordtimer, d.m.timesats))
+  const akkordloen = deltagere.map((d) => gange(d.akkordtimer, d.m.akkordsats ?? d.m.timesats))
   const samletLoen = sum(akkordloen, (x) => x)
   const overskud = akkordsum - samletLoen
 
@@ -142,6 +145,7 @@ export function beregnAkkord(data: ProjektData, advarsler: string[] = []): Akkor
     akkordloen: samletLoen,
     overskud,
     krPrAkkordtime: prTime(akkordsum, akkordtimer),
+    gnsKrPrAkkordtimePrPerson: personer.length === 0 ? 0 : afrund(sum(personer, (p) => p.krPrAkkordtime) / personer.length),
   }
 }
 
@@ -154,8 +158,8 @@ export function beregnTimeloen(data: ProjektData): TimeloenRegnskab {
         vejrlig: sumTimer(data, m.id, 'vejrlig'),
       }
       const timeloen = gange(t.timeloen, m.timesats)
-      const syg = gange(t.syg, m.timesats)
-      const vejrlig = gange(t.vejrlig, m.timesats)
+      const syg = gange(t.syg, m.sygsats ?? m.timesats)
+      const vejrlig = gange(t.vejrlig, m.vejrligsats ?? m.timesats)
       return { medlemId: m.id, timer: t, timeloen, syg, vejrlig, iAlt: timeloen + syg + vejrlig }
     })
     .filter((p) => p.timer.timeloen + p.timer.syg + p.timer.vejrlig > 0)

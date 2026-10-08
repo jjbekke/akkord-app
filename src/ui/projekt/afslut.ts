@@ -1,5 +1,5 @@
 import { jsPDF } from 'jspdf'
-import { autoTable } from 'jspdf-autotable'
+import { autoTable, type CellHookData } from 'jspdf-autotable'
 import writeXlsxFile, { type SheetData } from 'write-excel-file/browser'
 import { beregnLoen } from '../../domain/beregning'
 import { kr, timer } from '../../domain/tal'
@@ -43,7 +43,12 @@ export async function lavKvittering(data: ProjektData): Promise<Blob> {
   doc.text(`Afsluttet: ${data.projekt.afsluttet ? datoKort(data.projekt.afsluttet) : datoKort(new Date().toISOString())}`, venstre, 32)
 
   const tabel = { theme: 'grid' as const, headStyles: { fillColor: groen }, styles: { fontSize: 9 }, margin: { left: venstre, right: venstre } }
-  const hoejre = { halign: 'right' as const }
+  /** Talkolonner højrestilles i alle rækker — også overskrift og total. */
+  const hoejre = (...kolonner: number[]) => ({
+    didParseCell: (c: CellHookData) => {
+      if (kolonner.includes(c.column.index)) c.cell.styles.halign = 'right'
+    },
+  })
   const efter = () => (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8
 
   // Hovedtal
@@ -55,14 +60,15 @@ export async function lavKvittering(data: ProjektData): Promise<Blob> {
       ['Akkordsum (materialer)', kr(r.akkord.akkordsum)],
       [`Akkordløn (${timer(r.akkord.akkordtimer)} t)`, kr(r.akkord.akkordloen)],
       ['Overskud', kr(r.akkord.overskud)],
-      ['Kr. pr. akkordtime i alt', kr(r.akkord.krPrAkkordtime)],
+      ['Gns. kr. pr. akkordtime pr. person', kr(r.akkord.gnsKrPrAkkordtimePrPerson)],
+      ['Kr. pr. akkordtime i alt (akkordsum ÷ timer)', kr(r.akkord.krPrAkkordtime)],
       ['Timeløn, syg og vejrlig', kr(r.total.timeloen + r.total.syg + r.total.vejrlig)],
       ['Rettelser', kr(r.total.justeringer)],
       ['I alt', kr(r.total.iAlt)],
     ],
-    columnStyles: { 1: hoejre },
     didParseCell: (c) => {
-      if (c.section === 'body' && c.row.index === 6) c.cell.styles.fontStyle = 'bold'
+      if (c.column.index === 1) c.cell.styles.halign = 'right'
+      if (c.section === 'body' && c.row.index === 7) c.cell.styles.fontStyle = 'bold'
     },
   })
 
@@ -74,7 +80,7 @@ export async function lavKvittering(data: ProjektData): Promise<Blob> {
     body: r.akkord.linjer.map((l) => [l.navn, timer(l.antal), kr(l.stykpris), kr(l.beloeb)]),
     foot: [['Akkordsum', '', '', kr(r.akkord.akkordsum)]],
     footStyles: { fillColor: [240, 240, 240], textColor: 20 },
-    columnStyles: { 1: hoejre, 2: hoejre, 3: hoejre },
+    ...hoejre(1, 2, 3),
   })
 
   // Akkord pr. person
@@ -85,7 +91,7 @@ export async function lavKvittering(data: ProjektData): Promise<Blob> {
     body: r.akkord.personer.map((p) => [navn(p.medlemId), timer(p.akkordtimer), kr(p.akkordloen), kr(p.overskud), kr(p.iAlt), kr(p.krPrAkkordtime)]),
     foot: [['I alt', timer(r.akkord.akkordtimer), kr(r.akkord.akkordloen), kr(r.akkord.overskud), kr(r.akkord.akkordloen + r.akkord.overskud), kr(r.akkord.krPrAkkordtime)]],
     footStyles: { fillColor: [240, 240, 240], textColor: 20 },
-    columnStyles: { 1: hoejre, 2: hoejre, 3: hoejre, 4: hoejre, 5: hoejre },
+    ...hoejre(1, 2, 3, 4, 5),
   })
 
   // Samlet løn pr. person
@@ -115,7 +121,7 @@ export async function lavKvittering(data: ProjektData): Promise<Blob> {
     ],
     footStyles: { fillColor: [240, 240, 240], textColor: 20 },
     styles: { fontSize: 8 },
-    columnStyles: { 1: hoejre, 2: hoejre, 3: hoejre, 4: hoejre, 5: hoejre, 6: hoejre },
+    ...hoejre(1, 2, 3, 4, 5, 6),
   })
 
   if (data.justeringer.length > 0) {
@@ -124,7 +130,7 @@ export async function lavKvittering(data: ProjektData): Promise<Blob> {
       startY: efter(),
       head: [['Rettelse', 'Begrundelse', 'Beløb']],
       body: data.justeringer.map((j) => [navn(j.medlemId), j.begrundelse, kr(j.beloeb)]),
-      columnStyles: { 2: hoejre },
+      ...hoejre(2),
     })
   }
 
