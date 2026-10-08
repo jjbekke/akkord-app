@@ -119,7 +119,11 @@ describe.skipIf(!KODE)('AKBOG mod Supabase', () => {
     // Satserne fra kartoteket kan kopieres ud i de aktive projekter
     const nyeSatser = { timesats: 11000, akkordsats: 12500, sygsats: null, vejrligsats: null }
     ok(await leder.from('personer').update(nyeSatser).eq('id', pMedlem.id))
-    expect(ok(await leder.from('projekt_medlemmer').update(nyeSatser).or(`person_id.eq.${pMedlem.id},bruger_id.eq.${MEDLEM_ID}`).select('id'))).toHaveLength(1)
+    // Rammer alle aktive projekter, hvor personen er med (via koblingen eller sit login)
+    const opdateret = ok(
+      await leder.from('projekt_medlemmer').update(nyeSatser).or(`person_id.eq.${pMedlem.id},bruger_id.eq.${MEDLEM_ID}`).select('id'),
+    )
+    expect(opdateret.map((r: { id: string }) => r.id)).toContain(ham.id)
     expect(ok(await leder.from('projekt_medlemmer').select('timesats, akkordsats, sygsats').eq('id', ham.id).single())).toEqual({
       timesats: 11000,
       akkordsats: 12500,
@@ -131,7 +135,13 @@ describe.skipIf(!KODE)('AKBOG mod Supabase', () => {
     const laast = await leder.from('timer').insert({ projekt_id: projektId, medlem_id: mig.id, dato: '2026-10-03', type: 'akkord', timer: 100 })
     expect(laast.error?.code).toBe('42501')
     // Satserne i et afsluttet projekt ændres ikke
-    expect(ok(await leder.from('projekt_medlemmer').update({ timesats: 1 }).or(`person_id.eq.${pMedlem.id},bruger_id.eq.${MEDLEM_ID}`).select('id'))).toHaveLength(0)
+    const iAfsluttet = await leder
+      .from('projekt_medlemmer')
+      .update({ timesats: 1 })
+      .eq('projekt_id', projektId)
+      .or(`person_id.eq.${pMedlem.id},bruger_id.eq.${MEDLEM_ID}`)
+      .select('id')
+    expect(ok(iAfsluttet)).toHaveLength(0)
     const sti = `${projektId}/test.pdf`
     ok(await leder.storage.from('projektfiler').upload(sti, new Blob(['%PDF-test'], { type: 'application/pdf' })))
     ok(await leder.from('projekt_filer').insert({ projekt_id: projektId, type: 'kvittering', filnavn: 'test.pdf', sti }))
