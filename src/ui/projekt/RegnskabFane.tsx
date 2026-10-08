@@ -213,6 +213,25 @@ function Afslutning({ data, laast, genindlaes }: Pick<FaneProps, 'data' | 'laast
     koer(() => repo.afslutProjekt(data.projekt.id, false))
   }
 
+  // Nyeste kvittering og nyeste timeløn-fil øverst; ældre (fra før en genåbning) under "Tidligere filer".
+  // data.filer er sorteret med nyeste først.
+  const nyeste = data.filer.filter((f, i) => data.filer.findIndex((g) => g.type === f.type) === i)
+  const tidligere = data.filer.filter((f) => !nyeste.includes(f))
+
+  const filRaekke = (f: (typeof data.filer)[number]) => (
+    <li key={f.id}>
+      <div>
+        <strong>{f.type === 'kvittering' ? 'Kvittering (PDF)' : 'Timeløn (Excel)'}</strong>
+        <div className="daempet lille">
+          {f.filnavn} · {datoKort(f.oprettet)}
+        </div>
+      </div>
+      <button className="lille-knap" onClick={() => hent(f.sti)}>
+        Hent
+      </button>
+    </li>
+  )
+
   const hent = (sti: string) =>
     koer(async () => {
       location.href = await repo.hentFilUrl(sti)
@@ -220,24 +239,18 @@ function Afslutning({ data, laast, genindlaes }: Pick<FaneProps, 'data' | 'laast
 
   return (
     <>
-      {data.filer.length > 0 && (
+      {nyeste.length > 0 && (
         <section className="kort">
           <h3>Filer</h3>
-          <ul className="liste">
-            {data.filer.map((f) => (
-              <li key={f.id}>
-                <div>
-                  <strong>{f.type === 'kvittering' ? 'Kvittering (PDF)' : 'Timeløn (Excel)'}</strong>
-                  <div className="daempet lille">
-                    {f.filnavn} · {datoKort(f.oprettet)}
-                  </div>
-                </div>
-                <button className="lille-knap" onClick={() => hent(f.sti)}>
-                  Hent
-                </button>
-              </li>
-            ))}
-          </ul>
+          <ul className="liste">{nyeste.map(filRaekke)}</ul>
+          {tidligere.length > 0 && (
+            <details className="fold tidligere">
+              <summary>
+                <span>Tidligere filer ({tidligere.length})</span>
+              </summary>
+              <ul className="liste">{tidligere.map(filRaekke)}</ul>
+            </details>
+          )}
         </section>
       )}
 

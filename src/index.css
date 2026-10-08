@@ -1061,3 +1061,13 @@ button.raekkeknap:active {
   transform: none;
   background: #f7f8f6;
 }
+
+details.fold.tidligere {
+  border-top: 1px solid var(--kant);
+  padding-top: 8px;
+}
+
+details.fold.tidligere > summary {
+  font-weight: 600;
+  color: var(--daempet);
+}
