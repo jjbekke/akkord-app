@@ -1029,3 +1029,35 @@ label.kalender {
   white-space: normal;
   font-size: 0.75rem;
 }
+
+/* En hel listerække der kan trykkes (fx for at rette en person) */
+button.raekkeknap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 52px;
+  margin: -6px 0;
+  padding: 6px 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  text-align: left;
+  font-weight: normal;
+}
+
+button.raekkeknap > div {
+  flex: 1;
+  min-width: 0;
+}
+
+button.raekkeknap strong .ikon-svg {
+  color: var(--accent);
+  vertical-align: -2px;
+  margin-left: 2px;
+}
+
+button.raekkeknap:active {
+  transform: none;
+  background: #f7f8f6;
+}

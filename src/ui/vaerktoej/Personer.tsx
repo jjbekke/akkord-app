@@ -4,7 +4,7 @@ import type { Kollega } from '../../data/repository'
 import { kr } from '../../domain/tal'
 import type { Person } from '../../domain/typer'
 import { useBruger, useHandling, useHent } from '../faelles'
-import { Fejl, Henter, Top } from '../komponenter'
+import { Fejl, Henter, Ikon, Top } from '../komponenter'
 import { SatsFelter } from '../SatsFelter'
 import { afvigendeSatser, laesSatser, satserEns, satsTekst } from '../satser'
 
@@ -54,16 +54,18 @@ export function Personer() {
       </li>
     ) : (
       <li key={p.id}>
-        <div>
-          <strong>{p.navn}</strong>
-          <div className="daempet lille">{ekstra ?? p.email ?? 'Ingen e-mail'}</div>
-        </div>
-        <span className="tal satskolonne">
-          {kr(p.timesats)}/t
-          {afvigendeSatser(p) && <small className="daempet">{afvigendeSatser(p)}</small>}
-        </span>
-        <button className="lille-knap" onClick={() => setRedigerer(p.id)}>
-          Ret
+        {/* Hele rækken kan trykkes for at rette — så satserne altid står i samme kolonne */}
+        <button className="raekkeknap" aria-label={`Ret ${p.navn}`} onClick={() => setRedigerer(p.id)}>
+          <div>
+            <strong>
+              {p.navn} <Ikon navn="registrer" str={15} />
+            </strong>
+            <div className="daempet lille">{ekstra ?? p.email ?? 'Ingen e-mail'}</div>
+          </div>
+          <span className="tal satskolonne">
+            {kr(p.timesats)}/t
+            {afvigendeSatser(p) && <small className="daempet">{afvigendeSatser(p)}</small>}
+          </span>
         </button>
       </li>
     )
